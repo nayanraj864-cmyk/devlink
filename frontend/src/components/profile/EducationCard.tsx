@@ -1,4 +1,4 @@
-import { Card } from "@/components/shared/primitives";
+import { Card, EmptyState } from "@/components/shared/primitives";
 import { GraduationCap } from "lucide-react";
 import { TypoCaption, TypoHeading } from "@/components/shared/Typography";
 
@@ -26,7 +26,12 @@ export function EducationCard({ education = [] }: EducationCardProps) {
       </div>
 
       {education.length === 0 ? (
-        <TypoCaption as="p">No education added yet.</TypoCaption>
+        <EmptyState
+          icon={GraduationCap}
+          title="Add your learning journey"
+          desc="Share the education and training that shaped your path."
+          className="rounded-xl border border-dashed border-primary/20 bg-primary/5 py-8"
+        />
       ) : (
         <div className="mt-4 space-y-3">
           {education.map((entry) => (

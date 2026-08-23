@@ -32,17 +32,19 @@ export function useCollaborationStatus() {
   useEffect(() => {
     return ws.on((event) => {
       if (event.type === "presence.collaboration_status_changed") {
+        const rawEvent = event as Record<string, unknown>;
         const userId =
           typeof event.userId === "string"
             ? event.userId
-            : typeof (event as Record<string, unknown>).user_id === "string"
-              ? ((event as Record<string, unknown>).user_id as string)
+            : typeof rawEvent.user_id === "string"
+              ? (rawEvent.user_id as string)
               : undefined;
-        const status = event.status;
-        if (userId && typeof status === "string") {
-          queryClient.setQueryData<{ user_id: string; status: string }>(QUERY_KEY, (old) =>
-            old?.user_id === userId ? { ...old, status } : old,
-          );
+        const newStatus = event.status;
+        if (userId && typeof newStatus === "string") {
+          queryClient.setQueryData<{ user_id: string; status: string }>(QUERY_KEY, (old) => {
+            if (!old) return old;
+            return old.user_id === userId || !old.user_id ? { ...old, status: newStatus } : old;
+          });
         }
       }
     });

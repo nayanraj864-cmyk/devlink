@@ -1,4 +1,4 @@
-import { api } from '../client';
+import { api } from "../client";
 
 export interface DeveloperInsightsMetrics {
   projects_created: number;
@@ -34,12 +34,15 @@ export interface DeveloperInsightsData {
   recent_achievements: string[];
 }
 
-export const getDeveloperInsights = async (range: string = '30d'): Promise<DeveloperInsightsData> => {
+export const getDeveloperInsights = async (
+  range: string = "30d",
+): Promise<DeveloperInsightsData> => {
   try {
     return await api.get<DeveloperInsightsData>(`/developer-insights?range=${range}`);
   } catch {
     // Fallback data for frontend preview when backend is not running locally or unauthenticated
-    const multiplier = range === '7d' ? 1 : range === '30d' ? 3 : range === '90d' ? 8 : range === '1y' ? 25 : 40;
+    const multiplier =
+      range === "7d" ? 1 : range === "30d" ? 3 : range === "90d" ? 8 : range === "1y" ? 25 : 40;
     return {
       user_id: 1,
       date_range: range,
@@ -62,16 +65,16 @@ export const getDeveloperInsights = async (range: string = '30d'): Promise<Devel
         ai_match_success_rate: { current: 88.5, previous: 82.0, percentage_change: 6.5 },
       },
       activity_timeline: [
-        { date: '2026-08-04', activity_count: 8, projects: 1, messages: 5, applications: 2 },
-        { date: '2026-08-05', activity_count: 12, projects: 0, messages: 10, applications: 2 },
-        { date: '2026-08-06', activity_count: 15, projects: 1, messages: 12, applications: 2 },
-        { date: '2026-08-07', activity_count: 9, projects: 0, messages: 7, applications: 2 },
-        { date: '2026-08-08', activity_count: 14, projects: 1, messages: 11, applications: 2 },
-        { date: '2026-08-09', activity_count: 18, projects: 0, messages: 15, applications: 3 },
-        { date: '2026-08-10', activity_count: 22, projects: 1, messages: 18, applications: 3 },
+        { date: "2026-08-04", activity_count: 8, projects: 1, messages: 5, applications: 2 },
+        { date: "2026-08-05", activity_count: 12, projects: 0, messages: 10, applications: 2 },
+        { date: "2026-08-06", activity_count: 15, projects: 1, messages: 12, applications: 2 },
+        { date: "2026-08-07", activity_count: 9, projects: 0, messages: 7, applications: 2 },
+        { date: "2026-08-08", activity_count: 14, projects: 1, messages: 11, applications: 2 },
+        { date: "2026-08-09", activity_count: 18, projects: 0, messages: 15, applications: 3 },
+        { date: "2026-08-10", activity_count: 22, projects: 1, messages: 18, applications: 3 },
       ],
-      top_skills_matched: ['TypeScript', 'React', 'FastAPI', 'Python', 'Docker'],
-      recent_achievements: ['Top 10% Contributor', 'Project Milestone Master', '12-Day Streak'],
+      top_skills_matched: ["TypeScript", "React", "FastAPI", "Python", "Docker"],
+      recent_achievements: ["Top 10% Contributor", "Project Milestone Master", "12-Day Streak"],
     };
   }
 };

@@ -1,6 +1,7 @@
-import { Card } from "@/components/shared/primitives";
+import { Card, EmptyState } from "@/components/shared/primitives";
 import { BriefcaseBusiness, BadgeCheck } from "lucide-react";
 import { TypoCaption, TypoHeading } from "@/components/shared/Typography";
+import type { ReactNode } from "react";
 
 export interface ExperienceEntry {
   title?: string | null;
@@ -23,6 +24,7 @@ export interface ExperienceCardProps {
   };
   errors?: Record<string, string>;
   onFieldChange?: (field: "role" | "company" | "experienceLevel", value: string) => void;
+  emptyAction?: ReactNode;
 }
 
 export function ExperienceCard({
@@ -34,6 +36,7 @@ export function ExperienceCard({
   formValues,
   errors,
   onFieldChange,
+  emptyAction,
 }: ExperienceCardProps) {
   const fallbackEntries =
     role || company || experienceLevel
@@ -114,7 +117,13 @@ export function ExperienceCard({
       </div>
 
       {experienceEntries.length === 0 ? (
-        <TypoCaption as="p">No experience added yet.</TypoCaption>
+        <EmptyState
+          icon={BriefcaseBusiness}
+          title="Your journey starts here"
+          desc="Add a role or experience level to give collaborators more context about your background."
+          action={emptyAction}
+          className="py-8"
+        />
       ) : (
         <div className="mt-4 space-y-4">
           {experienceEntries.map((entry, index) => (

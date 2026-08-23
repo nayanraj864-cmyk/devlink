@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { activityHeatmapApi, type ActivityHeatmap } from "@/api/modules/activityHeatmap";
-import { Card, Skeleton } from "@/components/shared/primitives";
+import { isBackendConfigured } from "@/api";
+import { Card, EmptyState, Skeleton } from "@/components/shared/primitives";
 import { cn } from "@/lib/utils";
 import { buildMonthLabels, buildWeeks, formatDayLabel } from "@/lib/heatmapGrid";
 import { Flame, TrendingUp } from "lucide-react";
@@ -99,9 +100,11 @@ export function HeatmapGrid({ data }: { data: ActivityHeatmap }) {
 }
 
 export function ContributionHeatmap({ username, days = 365, className }: ContributionHeatmapProps) {
+  const backendConfigured = isBackendConfigured();
   const { data, isLoading, isError } = useQuery({
     queryKey: ["activity-heatmap", username, days],
     queryFn: () => activityHeatmapApi.getForUser(username, { days }),
+    enabled: backendConfigured,
     // The grid only changes once a day; refetching on every focus is waste.
     staleTime: 5 * 60 * 1000,
     retry: 1,
@@ -126,9 +129,21 @@ export function ContributionHeatmap({ username, days = 365, className }: Contrib
       ) : null}
 
       {isError ? (
-        <p className="py-6 text-center text-[12px] text-muted-foreground">
-          Contribution activity is unavailable right now.
-        </p>
+        <EmptyState
+          icon={TrendingUp}
+          title="Contribution activity is unavailable"
+          desc="Try again in a moment."
+          className="rounded-xl border border-dashed border-border/80 bg-muted/20 py-8"
+        />
+      ) : null}
+
+      {!isLoading && !isError && !data ? (
+        <EmptyState
+          icon={TrendingUp}
+          title="Start your contribution story"
+          desc="Your project work and community activity will light up this chart."
+          className="rounded-xl border border-dashed border-primary/20 bg-primary/5 py-8"
+        />
       ) : null}
 
       {data && !isError ? (

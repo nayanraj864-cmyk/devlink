@@ -1,9 +1,15 @@
+import os
 import pytest
 from typing import Generator
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
+
+# Run Celery tasks eagerly (inline) so tests do not depend on a live Redis
+# broker. Notification dispatch still works; it is just synchronous.
+os.environ.setdefault("CELERY_TASK_ALWAYS_EAGER", "True")
+os.environ.setdefault("CELERY_BROKER_URL", "memory://")
 
 from sqlalchemy.dialects.sqlite.base import SQLiteTypeCompiler
 import app.core.security

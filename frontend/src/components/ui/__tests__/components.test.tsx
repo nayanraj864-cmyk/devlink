@@ -21,7 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
-import { Card, TagChip, EmptyState, Avatar, StatusDot } from "@/components/shared/primitives";
+import { Card, TagChip, EmptyState, Avatar, StatusDot, SectionHeader } from "@/components/shared/primitives";
 
 // ---------------------------------------------------------------------------
 // Button
@@ -453,5 +453,28 @@ describe("DropdownMenu", () => {
     await userEvent.click(screen.getByText("Open menu"));
     await userEvent.click(await screen.findByText("Notifications"));
     expect(handler).toHaveBeenCalledWith(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SectionHeader
+// ---------------------------------------------------------------------------
+
+describe("SectionHeader", () => {
+  it("renders heading title and decorative indicator dot", () => {
+    const { container } = render(<SectionHeader title="Current Projects" />);
+    expect(screen.getByText("Current Projects")).toBeInTheDocument();
+    const dot = container.querySelector('span[aria-hidden="true"]');
+    expect(dot).toBeInTheDocument();
+    expect(dot).toHaveClass("rounded-full", "bg-primary");
+  });
+
+  it("renders action button and triggers callback", async () => {
+    const onAction = vi.fn();
+    render(<SectionHeader title="Notifications" action="View All" onAction={onAction} />);
+    const button = screen.getByRole("button", { name: "View All" });
+    expect(button).toBeInTheDocument();
+    await userEvent.click(button);
+    expect(onAction).toHaveBeenCalledTimes(1);
   });
 });

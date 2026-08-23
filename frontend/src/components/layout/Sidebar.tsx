@@ -26,6 +26,7 @@ import { UserProfile } from "./UserProfile";
 import { useSavedSearches } from "@/stores/useSavedSearches";
 import { Trash } from "lucide-react";
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const SIDEBAR_SECTIONS: SidebarSectionProps[] = [
   {
     label: "Navigation",
@@ -54,6 +55,11 @@ export const SIDEBAR_SECTIONS: SidebarSectionProps[] = [
         label: "Bookmarks",
         to: "/bookmarks",
         icon: <Bookmark size={16} strokeWidth={2} />,
+      },
+      {
+        label: "What's New",
+        to: "/announcements",
+        icon: <Sparkles size={16} strokeWidth={2} />,
       },
     ],
   },

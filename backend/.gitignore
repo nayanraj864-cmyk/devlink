@@ -1,3 +1,6 @@
 .coverage
 __pycache__/
 *.py[cod]
+
+# Runtime uploads (created by the app and test suite)
+uploads/

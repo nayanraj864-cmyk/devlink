@@ -16,18 +16,25 @@ export interface SidebarItemProps {
 
 export function SidebarItem({ label, to, search, icon, badge, action, forceCollapsed }: SidebarItemProps) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const searchStr = useRouterState({ select: (s) => s.location.searchStr });
   const { isCollapsed, closeMobile } = useSidebar();
 
+  const [path, query] = to.split("?");
+  const searchObj = query ? Object.fromEntries(new URLSearchParams(query).entries()) : undefined;
+  const effectiveSearch = search || searchObj;
+
   const collapsed = forceCollapsed ?? isCollapsed;
-  const active =
-    pathname === to || pathname.startsWith(to.split("?")[0] + "/") || pathname === to.split("?")[0];
+  const isExactPath = pathname === path;
+  const isSubPath = pathname.startsWith(path + "/");
+  const isMatchSearch = !query || searchStr.includes(query);
+  const active = (isExactPath && isMatchSearch) || (isSubPath && !query);
 
   if (collapsed) {
     return (
       <li>
         <Link
-          to={to.split("?")[0]}
-          search={search}
+          to={path}
+          search={effectiveSearch as any}
           onClick={closeMobile}
           title={label}
           aria-label={label}
@@ -66,8 +73,8 @@ export function SidebarItem({ label, to, search, icon, badge, action, forceColla
   return (
     <li title={undefined}>
       <Link
-        to={to.split("?")[0]}
-        search={search}
+        to={path}
+        search={effectiveSearch as any}
         preload="intent"
         onClick={closeMobile}
         aria-current={active ? "page" : undefined}

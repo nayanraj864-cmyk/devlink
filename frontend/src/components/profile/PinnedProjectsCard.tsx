@@ -2,7 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Star, Eye, Pin } from "lucide-react";
 import { pinnedProjectsApi, type PinnedProject } from "@/api/modules/pinnedProjects";
-import { Card, Skeleton, TagChip } from "@/components/shared/primitives";
+import { isBackendConfigured } from "@/api";
+import { Card, EmptyState, Skeleton, TagChip } from "@/components/shared/primitives";
 import { cn } from "@/lib/utils";
 
 interface PinnedProjectsCardProps {
@@ -53,16 +54,18 @@ export function PinnedProjectsCard({
   isOwnProfile = false,
   className,
 }: PinnedProjectsCardProps) {
+  const backendConfigured = isBackendConfigured();
   const { data, isLoading, isError } = useQuery({
     queryKey: ["pinned-projects", username],
     queryFn: () => pinnedProjectsApi.getForUser(username),
+    enabled: backendConfigured,
     staleTime: 60 * 1000,
     retry: 1,
   });
 
   // A profile with nothing pinned should not grow an empty card for visitors —
   // only the owner needs the nudge to pin something.
-  const hasPins = (data?.items.length ?? 0) > 0;
+  const hasPins = (data?.items?.length ?? 0) > 0;
   if (!isLoading && !isError && !hasPins && !isOwnProfile) return null;
 
   return (
@@ -80,16 +83,31 @@ export function PinnedProjectsCard({
       ) : null}
 
       {isError ? (
-        <p className="mt-3 text-[12px] text-muted-foreground">
-          Pinned projects are unavailable right now.
-        </p>
+        <EmptyState
+          icon={Pin}
+          title="Pinned projects are unavailable"
+          desc="Try again in a moment."
+          className="rounded-xl border border-dashed border-border/80 bg-muted/20 py-7"
+        />
       ) : null}
 
       {!isLoading && !isError && !hasPins ? (
-        <p className="mt-3 text-[12px] text-muted-foreground">
-          Nothing pinned yet. Pin up to {data?.max_pins ?? 6} projects to feature them at the top of
-          your profile.
-        </p>
+        <EmptyState
+          icon={Pin}
+          title="Feature your best work"
+          desc={`Pin up to ${data?.max_pins ?? 6} projects to keep them at the top of your profile.`}
+          action={
+            isOwnProfile ? (
+              <Link
+                to="/projects"
+                className="inline-flex items-center rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+              >
+                Browse projects
+              </Link>
+            ) : undefined
+          }
+          className="rounded-xl border border-dashed border-primary/20 bg-primary/5 py-7"
+        />
       ) : null}
 
       {hasPins ? (

@@ -1,5 +1,5 @@
 import { createFileRoute, notFound, Link, useNavigate } from "@tanstack/react-router";
-import { Card, TagChip, Avatar, Skeleton } from "@/components/shared/primitives";
+import { Card, EmptyState, Skeleton } from "@/components/shared/primitives";
 import { UserAvatar } from "@/components/user-avatar";
 import { ImageCropUploadModal } from "@/components/shared/ImageCropUploadModal";
 import { currentUser } from "@/mocks/seed";
@@ -25,6 +25,9 @@ import {
   TrendingUp,
   FolderOpen,
   Plus,
+  Award,
+  FolderKanban,
+  Users,
 } from "lucide-react";
 import { ReportUserModal } from "@/components/shared/ReportUserModal";
 import { analyticsApi } from "@/api/modules/analytics";
@@ -104,6 +107,14 @@ function ProfilePage() {
   const me =
     username === currentUser.handle ||
     Boolean(fetchedUser && fetchedUser.username === currentUser.handle);
+  const profileAction = (
+    <Link
+      to="/settings"
+      className="inline-flex items-center rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+    >
+      Update profile
+    </Link>
+  );
 
   const b = useMemo(() => {
     if (!fetchedUser) return null;
@@ -172,6 +183,7 @@ function ProfilePage() {
   });
 
   const { data: followStatus } = useFollowStatus(b?.id || "");
+  const followerCount = followStatus?.follower_count ?? b?.followers ?? 0;
 
   // Live collaboration presence status
   const {
@@ -657,19 +669,20 @@ function ProfilePage() {
 
       <div className="grid gap-4 lg:grid-cols-3 items-start">
         <div className="flex flex-col gap-4">
-          <SkillsCard skills={b.profileSkills ?? []} />
+          <SkillsCard skills={b.profileSkills ?? []} emptyAction={me ? profileAction : undefined} />
           <ExperienceCard
             role={b.role}
             company={b.company}
             experienceLevel={b.experienceLevel}
             entries={b.experience}
+            emptyAction={me ? profileAction : undefined}
           />
 
           <PinnedProjectsCard username={b.handle} isOwnProfile={me} />
 
-          {b.badges && b.badges.length > 0 && (
-            <Card className="p-4">
-              <p className="text-[13px] font-semibold text-foreground">Badges</p>
+          <Card className="p-4">
+            <p className="text-[13px] font-semibold text-foreground">Achievements</p>
+            {b.badges && b.badges.length > 0 ? (
               <div className="mt-3 flex flex-wrap gap-2">
                 {b.badges.map((badge: string) => (
                   <span
@@ -680,8 +693,41 @@ function ProfilePage() {
                   </span>
                 ))}
               </div>
+            ) : (
+              <EmptyState
+                icon={Award}
+                title="Achievements await"
+                desc="Complete projects and contribute to the community to earn badges."
+                action={
+                  me ? (
+                    <Link to="/projects" className="inline-flex items-center rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90">
+                      Explore projects
+                    </Link>
+                  ) : undefined
+                }
+                className="py-8"
+              />
+            )}
+          </Card>
+
+          {followerCount === 0 ? (
+            <Card className="p-4">
+              <p className="text-[13px] font-semibold text-foreground">Followers</p>
+              <EmptyState
+                icon={Users}
+                title="Build your network"
+                desc="Share your profile and collaborate with other builders to grow your audience."
+                action={
+                  me ? (
+                    <Link to="/builders" className="inline-flex items-center rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90">
+                      Find builders
+                    </Link>
+                  ) : undefined
+                }
+                className="py-8"
+              />
             </Card>
-          )}
+          ) : null}
         </div>
 
         <div className="flex flex-col gap-4 lg:col-span-2">
@@ -788,7 +834,7 @@ function ProfilePage() {
             }
             return <ContributionHeatmap username={b.handle} className="mt-4" />;
           })()}
-          <ActivityTimeline userId={b.id} />
+          <ActivityTimeline userId={b.id} emptyAction={me ? profileAction : undefined} />
         </div>
       </div>
       {!me && (

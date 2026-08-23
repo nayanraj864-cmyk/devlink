@@ -267,6 +267,7 @@ class User(Base):
             "resume": "public",
             "social_links": "public",
             "availability": "public",
+            "activity": "public",
         },
     )
 
@@ -277,6 +278,7 @@ class User(Base):
             "resume": "public",
             "social_links": "public",
             "availability": "public",
+            "activity": "public",
         }
         if not self.privacy_settings:
             return defaults

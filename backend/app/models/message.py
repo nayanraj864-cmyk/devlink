@@ -25,6 +25,7 @@ class MessageType(str, Enum):
     TEXT = "text"
     IMAGE = "image"
     FILE = "file"
+    VOICE = "voice"
     SYSTEM = "system"
     AI = "ai"
 
@@ -117,6 +118,51 @@ class Message(Base):
     )
 
     # ==========================================================
+    # Scheduling
+    # ----------------------------------------------------------
+    # A message scheduled via ``scheduled_for`` is persisted immediately
+    # but hidden from the thread (``is_sent=False``) until a Celery beat
+    # task flips it to sent at the scheduled instant.
+    # ==========================================================
+
+    is_sent: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        server_default="true",
+        nullable=False,
+        index=True,
+    )
+
+    scheduled_for: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        index=True,
+    )
+
+    # ==========================================================
+    # Pinning
+    # ==========================================================
+
+    is_pinned: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        server_default="false",
+        nullable=False,
+        index=True,
+    )
+
+    pinned_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    pinned_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    # ==========================================================
     # Relationships
     # ==========================================================
 
@@ -128,6 +174,7 @@ class Message(Base):
     sender = relationship(
         "User",
         backref="messages",
+        foreign_keys=[sender_id],
     )
 
     parent_message = relationship(

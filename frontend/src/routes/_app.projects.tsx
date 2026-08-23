@@ -19,10 +19,12 @@ import { ProjectInsightsCard } from "@/components/projects/ProjectInsightsCard";
 import { useProjectFilters } from "@/hooks/useProjectFilters";
 import { cn } from "@/lib/utils";
 import { getRecentlyViewedProjectIds } from "@/lib/recentlyViewedProjects";
+import { ProjectOverviewCard } from "@/components/projects/ProjectOverviewCard";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { FilterDrawer, FilterSection, type FilterValue } from "@/components/ui/filter-drawer";
 import { TypoCaption, TypoHeading } from "@/components/shared/Typography";
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const projectSearchSchema = z.object({
   page: z.number().catch(1).optional(),
   q: z.string().optional(),
@@ -119,7 +121,7 @@ function ProjectsPage() {
         replace: true,
       });
     }
-  }, [search.create]);
+  }, [search.create, navigate]);
 
   const { data = [], isLoading } = useQuery({
     queryKey: [
@@ -440,89 +442,18 @@ function ProjectsPage() {
         <>
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             {paginated.map((p) => (
-              <Link
-                key={p.id}
-                to="/projects/$projectId"
-                params={{ projectId: p.id }}
-                className="block"
-              >
-                <Card interactive className="p-4">
-                  <div className="flex items-start gap-3">
-                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-muted text-xl">
-                      {p.icon}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[14px] font-semibold text-foreground">{p.name}</p>
-                      <TypoCaption as="p">
-                        {p.description}
-                      </TypoCaption>
-                    </div>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-1">
-                    {p.stack.map((s) => (
-                      <TagChip key={s}>{s}</TagChip>
-                    ))}
-                    {p.difficulty && (
-                      <TagChip
-                        className={cn(
-                          p.difficulty === "Beginner"
-                            ? "border-success/30 bg-success/10 text-success"
-                            : p.difficulty === "Intermediate"
-                              ? "border-warning/30 bg-warning/10 text-warning"
-                              : "border-destructive/30 bg-destructive/10 text-destructive",
-                        )}
-                      >
-                        {p.difficulty}
-                      </TagChip>
-                    )}
-                  </div>
-                  <div className="mt-3">
-                    <div className="mb-1 flex items-center justify-between text-[11px] text-muted-foreground">
-                      <span>Progress</span>
-                      <span>{p.progress}%</span>
-                    </div>
-                    <div className="h-1 overflow-hidden rounded-full bg-muted">
-                      <div className="h-full bg-primary" style={{ width: `${p.progress}%` }} />
-                    </div>
-                  </div>
-                  <div className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground">
-                    <span className="inline-flex items-center gap-1">
-                      <Users2 size={12} /> {p.members}
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <Star size={12} /> {p.stars}
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <GitFork size={12} /> {p.forks}
-                    </span>
-                    <span
-                      className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase ${
-                        p.status === "recruiting"
-                          ? "bg-primary/10 text-primary"
-                          : p.status === "in-progress"
-                            ? "bg-warning/10 text-warning"
-                            : p.status === "completed"
-                              ? "bg-success/10 text-success"
-                              : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {p.status
-                        .split("-")
-                        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                        .join(" ")}
-                    </span>
-                  </div>
-                  <ProjectInsightsCard
-                    compact
-                    projectId={p.id}
-                    title={p.name}
-                    description={p.description}
-                    techStack={p.stack}
-                    status={p.status}
-                    members={p.members}
-                  />
-                </Card>
-              </Link>
+              <div key={p.id} className="flex flex-col gap-2">
+                <ProjectOverviewCard project={p} />
+                <ProjectInsightsCard
+                  compact
+                  projectId={p.id}
+                  title={p.name}
+                  description={p.description}
+                  techStack={p.stack}
+                  status={p.status}
+                  members={p.members}
+                />
+              </div>
             ))}
           </div>
 

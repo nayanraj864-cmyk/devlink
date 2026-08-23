@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/shared/primitives";
+import { Card, EmptyState } from "@/components/shared/primitives";
 import { UserAvatar } from "@/components/user-avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -245,16 +245,13 @@ function TemplatesPage() {
           ))}
         </div>
       ) : templates.length === 0 ? (
-        <div className="p-12 text-center border border-dashed rounded-2xl bg-card">
-          <LayoutTemplate className="mx-auto h-12 w-12 text-muted-foreground/50 mb-3" />
-          <TypoSection>No templates found</TypoSection>
-          <TypoCaption as="p">
-            Try adjusting your search criteria or be the first to publish a template in this category!
-          </TypoCaption>
-          <Button onClick={() => setPublishOpen(true)} variant="outline" size="sm" className="mt-4 gap-2">
-            <Plus size={14} /> Publish Template
-          </Button>
-        </div>
+        <EmptyState
+          icon={LayoutTemplate}
+          title="No templates found"
+          desc="Try a different search, or publish the first template in this category."
+          action={<Button onClick={() => setPublishOpen(true)} variant="outline" size="sm" className="gap-2"><Plus size={14} /> Publish template</Button>}
+          className="rounded-2xl border border-dashed border-primary/20 bg-primary/5"
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {templates.map((tpl) => (

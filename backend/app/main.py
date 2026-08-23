@@ -68,6 +68,7 @@ from app.routers import (
     maintenance,
     message_drafts,
     global_announcements,
+    feature_announcements,
     posts,
 )
 
@@ -502,9 +503,8 @@ app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 from app.routers import mfa
 
 app.include_router(mfa.router, prefix="/api")
-app.include_router(
-    global_announcements.router, prefix="/api", tags=["Global Announcements"]
-)
+app.include_router(global_announcements.router, prefix="/api", tags=["Global Announcements"])
+app.include_router(feature_announcements.router, prefix="/api", tags=["Feature Announcement Center"])
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(blocks.router, prefix="/api/blocks", tags=["User Blocks"])
 from app.routers import testimonials
@@ -697,6 +697,9 @@ app.include_router(feature_flags.router, prefix="/api", tags=["Feature Flags"])
 from app.routers import reputation
 
 app.include_router(reputation.router, prefix="/api", tags=["User Reputation System"])
+
+from app.routers import email_templates
+app.include_router(email_templates.router, prefix="/api", tags=["Email Notification Templates"])
 
 from app.routers import developer_insights
 

@@ -30,6 +30,7 @@ class MessageBase(BaseModel):
 
 class MessageCreate(MessageBase):
     conversation_id: uuid.UUID
+    scheduled_for: Optional[datetime] = None
 
 
 class MessageUpdate(BaseModel):
@@ -46,6 +47,11 @@ class MessageResponse(MessageBase):
     sender_id: uuid.UUID
     is_edited: bool
     is_deleted: bool
+    is_sent: bool
+    is_pinned: bool
+    scheduled_for: Optional[datetime] = None
+    pinned_by_id: Optional[uuid.UUID] = None
+    pinned_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
     edited_at: Optional[datetime] = None

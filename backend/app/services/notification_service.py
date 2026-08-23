@@ -324,7 +324,24 @@ class NotificationService:
             "application_id": str(application_id) if application_id else None,
         }
 
-        send_notification_task.delay(payload)
+        try:
+            send_notification_task.delay(payload)
+        except Exception as exc:  # noqa: BLE001 - broker may be unavailable
+            # Fall back to inline execution so message sends (and other flows)
+            # never break just because the broker is down (e.g. in tests or a
+            # degraded deployment). Production with a healthy Redis broker keeps
+            # the async path.
+            import logging
+
+            logging.getLogger(__name__).warning(
+                "Notification broker unavailable (%s); dispatching inline.", exc
+            )
+            try:
+                send_notification_task.apply(args=[payload])
+            except Exception:  # noqa: BLE001
+                logging.getLogger(__name__).exception(
+                    "Inline notification dispatch also failed; skipping."
+                )
 
     @staticmethod
     def create_project_invitation(

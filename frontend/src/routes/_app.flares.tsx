@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { flaresService } from "@/services";
-import { Card, TagChip, Avatar } from "@/components/shared/primitives";
+import { Card, EmptyState, TagChip, Avatar } from "@/components/shared/primitives";
 import { Markdown } from "@/components/shared/Markdown";
 import { PostComposer } from "@/components/shared/PostComposer/PostComposer";
 import { MarkdownEditor } from "@/components/shared/MarkdownEditor";
@@ -305,7 +305,12 @@ function FlaresPage() {
           feedPosts.length > 0 ? (
             feedPosts.map((f) => <FlareCard key={f.id} flare={f} />)
           ) : (
-            <TypoCaption as="p">No feed posts found.</TypoCaption>
+            <EmptyState
+              icon={Flame}
+              title="The feed is ready for a spark"
+              desc="Share an update, a question, or a useful tip with the community."
+              className="rounded-xl border border-dashed border-primary/20 bg-primary/5 py-10"
+            />
           )
         ) : draftPosts.length > 0 ? (
           draftPosts.map((f) => (
@@ -319,7 +324,12 @@ function FlaresPage() {
             />
           ))
         ) : (
-          <TypoCaption as="p">No drafts or scheduled posts found.</TypoCaption>
+          <EmptyState
+            icon={BookOpen}
+            title="No saved drafts"
+            desc="Drafts you save for later will appear here."
+            className="rounded-xl border border-dashed border-border/80 bg-muted/20 py-10"
+          />
         )}
       </div>
 

@@ -140,6 +140,15 @@ export interface Message {
   attachment_name?: string;
   attachment_size?: number;
   mime_type?: string;
+  sender_id?: string;
+  is_edited?: boolean;
+  is_deleted?: boolean;
+  is_sent?: boolean;
+  is_pinned?: boolean;
+  scheduled_for?: string;
+  read_at?: string;
+  pinned_by_id?: string;
+  pinned_at?: string;
 }
 export interface Notification {
   id: ID;

@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
-import { createFileRoute } from '@tanstack/react-router';
-import { DeveloperInsightsDashboard } from '../components/dashboard/DeveloperInsightsDashboard';
+import { createFileRoute } from "@tanstack/react-router";
+import { DeveloperInsightsDashboard } from "../components/dashboard/DeveloperInsightsDashboard";
 
-export const Route = createFileRoute('/_app/insights')({
+export const Route = createFileRoute("/_app/insights")({
   component: InsightsPage,
 });
 

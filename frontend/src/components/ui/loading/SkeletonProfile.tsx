@@ -1,10 +1,10 @@
-import React from 'react';
+import React from "react";
 
 export interface SkeletonProfileProps {
   className?: string;
 }
 
-export const SkeletonProfile: React.FC<SkeletonProfileProps> = ({ className = '' }) => {
+export const SkeletonProfile: React.FC<SkeletonProfileProps> = ({ className = "" }) => {
   return (
     <div
       className={`w-full max-w-4xl p-6 bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl space-y-6 animate-pulse shadow-sm dark:shadow-none ${className}`}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 export interface SkeletonCardProps {
   count?: number;
@@ -9,12 +9,17 @@ export interface SkeletonCardProps {
 
 export const SkeletonCard: React.FC<SkeletonCardProps> = ({
   count = 1,
-  className = '',
+  className = "",
   hasAvatar = true,
   lines = 3,
 }) => {
   return (
-    <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 ${className}`} role="status" aria-busy="true" aria-label="Loading content cards">
+    <div
+      className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 ${className}`}
+      role="status"
+      aria-busy="true"
+      aria-label="Loading content cards"
+    >
       {[...Array(count)].map((_, idx) => (
         <div
           key={idx}
@@ -34,7 +39,7 @@ export const SkeletonCard: React.FC<SkeletonCardProps> = ({
               <div
                 key={lineIdx}
                 className="h-3.5 bg-slate-200 dark:bg-slate-700/40 rounded"
-                style={{ width: lineIdx === lines - 1 ? '60%' : '100%' }}
+                style={{ width: lineIdx === lines - 1 ? "60%" : "100%" }}
               ></div>
             ))}
           </div>

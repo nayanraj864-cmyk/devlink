@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, useRouterState, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { hackathonsService } from "@/services";
-import { Card, TagChip, Skeleton } from "@/components/shared/primitives";
+import { Card, EmptyState, TagChip, Skeleton } from "@/components/shared/primitives";
 import { Trophy, Users2, Clock, Plus, Search, Bookmark } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { CreateHackathonDialog } from "@/components/hackathons/CreateHackathonDialog";
@@ -162,19 +162,13 @@ function HackathonsPage() {
           ))}
         </div>
       ) : filteredData.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="mb-3 grid h-12 w-12 place-items-center rounded-full bg-muted text-muted-foreground">
-            🏆
-          </div>
-          <p className="text-[14px] font-semibold text-foreground">No hackathons yet</p>
-          <TypoCaption as="p">Be the first to create one.</TypoCaption>
-          <button
-            onClick={() => setCreateOpen(true)}
-            className="mt-3 text-[13px] font-medium text-primary hover:underline"
-          >
-            Create hackathon
-          </button>
-        </div>
+        <EmptyState
+          icon={Trophy}
+          title="No hackathons yet"
+          desc="Bring builders together by creating the first challenge."
+          action={<button onClick={() => setCreateOpen(true)} className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90">Create hackathon</button>}
+          className="rounded-xl border border-dashed border-primary/20 bg-primary/5"
+        />
       ) : (
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {filteredData.map((h) => (

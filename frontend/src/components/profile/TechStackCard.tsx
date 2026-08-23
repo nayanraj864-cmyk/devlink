@@ -1,4 +1,4 @@
-import { Card, TagChip } from "@/components/shared/primitives";
+import { Card, EmptyState, TagChip } from "@/components/shared/primitives";
 import { Cpu } from "lucide-react";
 import type { ProfileSkill } from "@/mocks/seed";
 import { TypoCaption, TypoHeading } from "@/components/shared/Typography";
@@ -70,7 +70,12 @@ export function TechStackCard({
       </div>
 
       {stackItems.length === 0 ? (
-        <TypoCaption as="p">No technologies added yet.</TypoCaption>
+        <EmptyState
+          icon={Cpu}
+          title="Build out your tech stack"
+          desc="Add the tools and technologies you enjoy working with."
+          className="rounded-xl border border-dashed border-primary/20 bg-primary/5 py-8"
+        />
       ) : (
         <div className="mt-4 flex flex-wrap gap-2">
           {stackItems.map((item) => (

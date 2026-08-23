@@ -1,4 +1,4 @@
-import { Card } from "@/components/shared/primitives";
+import { Card, EmptyState } from "@/components/shared/primitives";
 import { MapPin, Clock3, Sparkles } from "lucide-react";
 import { TypoCaption, TypoHeading } from "@/components/shared/Typography";
 
@@ -127,7 +127,12 @@ export function BioCard({
       </div>
 
       {!hasContent ? (
-        <TypoCaption as="p">No profile details added yet.</TypoCaption>
+        <EmptyState
+          icon={Sparkles}
+          title="Tell your story"
+          desc="Add a short bio, headline, or location to help other builders get to know you."
+          className="rounded-xl border border-dashed border-primary/20 bg-primary/5 py-8"
+        />
       ) : (
         <div className="mt-4 space-y-3">
           {headline ? <p className="text-sm font-semibold text-foreground">{headline}</p> : null}

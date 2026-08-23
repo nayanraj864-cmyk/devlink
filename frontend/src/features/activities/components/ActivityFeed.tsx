@@ -3,6 +3,8 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { activitiesApi, ActivityType } from "@/api/modules/activities";
 import { ActivityItem } from "./ActivityItem";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/shared/primitives";
+import { Activity } from "lucide-react";
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
 
 type FilterGroup = {
@@ -142,12 +144,19 @@ export function ActivityFeed({ actorId, targetId, targetType }: ActivityFeedProp
             <p>Failed to load activities. Please try again later.</p>
           </div>
         ) : activities.length === 0 ? (
-          <div className="p-12 text-center bg-gray-50 rounded-lg border border-gray-200 border-dashed">
-            <p className="text-gray-500 font-medium">No activities found</p>
-            <p className="text-sm text-gray-400 mt-1">
-              Check back later or try a different filter.
-            </p>
-          </div>
+          <EmptyState
+            icon={Activity}
+            title="No activity found"
+            desc="Check back later, or clear your filter to see everything happening."
+            action={
+              activeFilterId !== "all" ? (
+                <button onClick={() => setActiveFilterId("all")} className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted">
+                  Clear filter
+                </button>
+              ) : undefined
+            }
+            className="rounded-xl border border-dashed border-border/80 bg-muted/20"
+          />
         ) : (
           <div className="space-y-3">
             {activities.map((activity) => (

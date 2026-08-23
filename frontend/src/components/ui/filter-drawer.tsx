@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { TypoCard } from "@/components/shared/Typography";
-import { EmptySearchState } from "@/components/shared/EmptySearchState";
 
 export interface FilterOption {
   label: string;
@@ -134,7 +133,7 @@ export function FilterDrawer({
   }, [open, onOpenChange]);
 
   // Track search queries per section for pills display
-  const [searchQueries, setSearchQueries] = React.useState<Record<string, string>>(
+  const [searchQueries, setSearchQueries] = React.useState<Record<string, string>>(() =>
     Object.fromEntries(sections.map((s) => [s.id, ""])),
   );
 
@@ -227,7 +226,7 @@ export function FilterDrawer({
 
   // Render search input with pill
   const renderSearchInput = (section: FilterSection) => {
-    const hasQuery = searchQueries[section.id] && searchQueries[section.id].trim();
+    const hasQuery = Boolean(searchQueries[section.id] && searchQueries[section.id].trim());
 
     return (
       <div className="relative mt-2 flex items-center">
@@ -385,6 +384,22 @@ export function FilterDrawer({
     return Object.values(searchQueries).some((q) => q && q.trim());
   }, [searchQueries]);
 
+  // Check if there are any filters active (selected chips or search queries)
+  const hasActiveFilters = React.useMemo(() => {
+    // Check if any multi/select section has selected values
+    const hasSelected = sections.some((section) => {
+      const isMulti = section.type !== "select" && section.type !== "range";
+      const selectedList = asList(draftValues[section.id]);
+      return selectedList.length > 0;
+    });
+    return hasSelected || hasAnySearchQuery;
+  }, [sections, draftValues, hasAnySearchQuery]);
+
+  if (!hasActiveFilters && !open) {
+    // Show empty state when no filters are active and drawer is closed
+    return null;
+  }
+
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
@@ -423,22 +438,6 @@ export function FilterDrawer({
         </DrawerContent>
       </Drawer>
     );
-  }
-
-  // Check if there are any filters active (selected chips or search queries)
-  const hasActiveFilters = React.useMemo(() => {
-    // Check if any multi/select section has selected values
-    const hasSelected = sections.some((section) => {
-      const isMulti = section.type !== "select" && section.type !== "range";
-      const selectedList = asList(draftValues[section.id]);
-      return selectedList.length > 0;
-    });
-    return hasSelected || hasAnySearchQuery;
-  }, [sections, draftValues, searchQueries]);
-
-  if (!hasActiveFilters && !open) {
-    // Show empty state when no filters are active and drawer is closed
-    return null;
   }
 
   return (

@@ -28,6 +28,7 @@ from app.services.message_service import MessageService
 from sqlalchemy import select
 
 from app.models.conversation_member import ConversationMember
+from app.models.message import Message
 from app.models.notification import NotificationType
 from app.services.notification_service import NotificationService
 
@@ -100,6 +101,68 @@ def my_messages(
 
 
 @router.get(
+    "/scheduled",
+    response_model=list[MessageResponse],
+)
+@limiter.limit(MESSAGE_LIMIT)
+def scheduled_messages(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_database),
+):
+    """List the current user's not-yet-sent scheduled messages."""
+    return MessageService.list_user_scheduled_messages(
+        db,
+        current_user.id,
+    )
+
+
+@router.delete(
+    "/scheduled/{message_id}",
+    response_model=MessageResponse,
+)
+@limiter.limit(MESSAGE_LIMIT)
+def cancel_scheduled_message(
+    request: Request,
+    message_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_database),
+):
+    """Cancel a scheduled message that has not been sent yet."""
+    db_message = MessageService.get_message(db, message_id)
+    if db_message is None or db_message.sender_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Scheduled message not found",
+        )
+    if db_message.is_sent:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Message has already been sent.",
+        )
+    return MessageService.cancel_scheduled_message(db, db_message)
+
+
+@router.get(
+    "/search",
+    response_model=list[MessageResponse],
+)
+@limiter.limit(SEARCH_LIMIT)
+def global_search_messages(
+    request: Request,
+    q: str = Query(..., min_length=1),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_database),
+):
+    """Global message search across every conversation the user belongs to."""
+    return MessageService.search_all_messages(
+        db,
+        current_user.id,
+        q,
+    )
+
+
+@router.get(
     "/search/{conversation_id}",
     response_model=list[MessageResponse],
 )
@@ -134,6 +197,21 @@ def count_messages(
             conversation_id,
         )
     }
+
+
+@router.get(
+    "/conversation/{conversation_id}/pinned",
+    response_model=list[MessageResponse],
+)
+@limiter.limit(MESSAGE_LIMIT)
+def pinned_messages(
+    request: Request,
+    conversation_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_database),
+):
+    """List messages pinned in a conversation (issue #973)."""
+    return MessageService.list_pinned_messages(db, conversation_id)
 
 
 @router.get(
@@ -259,6 +337,26 @@ def get_message(
     return message
 
 
+def _get_owned_message(
+    db: Session,
+    message_id: uuid.UUID,
+    current_user: User,
+) -> Message:
+    """Fetch a message and assert the current user owns it (issue #973)."""
+    db_message = MessageService.get_message(db, message_id)
+    if db_message is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Message not found",
+        )
+    if db_message.sender_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only edit or delete your own messages.",
+        )
+    return db_message
+
+
 @router.put(
     "/{message_id}",
     response_model=MessageResponse,
@@ -268,25 +366,64 @@ def update_message(
     request: Request,
     message_id: uuid.UUID,
     message: MessageUpdate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_database),
 ):
 
-    db_message = MessageService.get_message(
-        db,
-        message_id,
-    )
-
-    if db_message is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Message not found",
-        )
+    db_message = _get_owned_message(db, message_id, current_user)
 
     return MessageService.update_message(
         db,
         db_message,
         message,
     )
+
+
+@router.patch(
+    "/{message_id}/pin",
+    response_model=MessageResponse,
+)
+@limiter.limit("20/minute")
+def pin_message(
+    request: Request,
+    message_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_database),
+):
+    """Pin a message in its conversation (issue #973)."""
+    db_message = MessageService.get_message(db, message_id)
+    if db_message is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Message not found",
+        )
+    if db_message.is_deleted:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot pin a deleted message.",
+        )
+    return MessageService.pin_message(db, db_message, current_user.id)
+
+
+@router.patch(
+    "/{message_id}/unpin",
+    response_model=MessageResponse,
+)
+@limiter.limit("20/minute")
+def unpin_message(
+    request: Request,
+    message_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_database),
+):
+    """Unpin a message (issue #973)."""
+    db_message = MessageService.get_message(db, message_id)
+    if db_message is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Message not found",
+        )
+    return MessageService.unpin_message(db, db_message)
 
 
 @router.patch(
@@ -297,19 +434,11 @@ def update_message(
 def restore_message(
     request: Request,
     message_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_database),
 ):
 
-    db_message = MessageService.get_message(
-        db,
-        message_id,
-    )
-
-    if db_message is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Message not found",
-        )
+    db_message = _get_owned_message(db, message_id, current_user)
 
     return MessageService.restore_message(
         db,
@@ -325,19 +454,11 @@ def restore_message(
 def delete_message(
     request: Request,
     message_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_database),
 ):
 
-    db_message = MessageService.get_message(
-        db,
-        message_id,
-    )
-
-    if db_message is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Message not found",
-        )
+    db_message = _get_owned_message(db, message_id, current_user)
 
     return MessageService.delete_message(
         db,

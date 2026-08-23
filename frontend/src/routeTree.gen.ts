@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
+import { Route as ShowcaseRouteImport } from './routes/showcase'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as MaintenanceRouteImport } from './routes/maintenance'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
@@ -38,6 +39,7 @@ import { Route as AppDesignSystemRouteImport } from './routes/_app.design-system
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppBuildersRouteImport } from './routes/_app.builders'
 import { Route as AppBookmarksRouteImport } from './routes/_app.bookmarks'
+import { Route as AppAnnouncementsRouteImport } from './routes/_app.announcements'
 import { Route as AppAnalyticsRouteImport } from './routes/_app.analytics'
 import { Route as AppAdminRouteImport } from './routes/_app.admin'
 import { Route as AppOrganizationsIndexRouteImport } from './routes/_app.organizations.index'
@@ -52,6 +54,7 @@ import { Route as AppAdminSearchAnalyticsRouteImport } from './routes/_app.admin
 import { Route as AppAdminNotificationsRouteImport } from './routes/_app.admin.notifications'
 import { Route as AppAdminMaintenanceRouteImport } from './routes/_app.admin.maintenance'
 import { Route as AppAdminJobsRouteImport } from './routes/_app.admin.jobs'
+import { Route as AppAdminEmailTemplatesRouteImport } from './routes/_app.admin.email-templates'
 import { Route as AppAdminCommunityStatsRouteImport } from './routes/_app.admin.community-stats'
 import { Route as AppAdminAuditLogsRouteImport } from './routes/_app.admin.audit-logs'
 import { Route as AppAdminApiRequestAnalyticsRouteImport } from './routes/_app.admin.api-request-analytics'
@@ -62,6 +65,11 @@ import { Route as AppProjectsProjectIdActivityRouteImport } from './routes/_app.
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
   path: '/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShowcaseRoute = ShowcaseRouteImport.update({
+  id: '/showcase',
+  path: '/showcase',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -203,6 +211,11 @@ const AppBookmarksRoute = AppBookmarksRouteImport.update({
   path: '/bookmarks',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAnnouncementsRoute = AppAnnouncementsRouteImport.update({
+  id: '/announcements',
+  path: '/announcements',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAnalyticsRoute = AppAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
@@ -276,6 +289,11 @@ const AppAdminJobsRoute = AppAdminJobsRouteImport.update({
   path: '/jobs',
   getParentRoute: () => AppAdminRoute,
 } as any)
+const AppAdminEmailTemplatesRoute = AppAdminEmailTemplatesRouteImport.update({
+  id: '/email-templates',
+  path: '/email-templates',
+  getParentRoute: () => AppAdminRoute,
+} as any)
 const AppAdminCommunityStatsRoute = AppAdminCommunityStatsRouteImport.update({
   id: '/community-stats',
   path: '/community-stats',
@@ -318,9 +336,11 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute
   '/maintenance': typeof MaintenanceRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/showcase': typeof ShowcaseRoute
   '/verify-email': typeof VerifyEmailRoute
   '/admin': typeof AppAdminRouteWithChildren
   '/analytics': typeof AppAnalyticsRoute
+  '/announcements': typeof AppAnnouncementsRoute
   '/bookmarks': typeof AppBookmarksRoute
   '/builders': typeof AppBuildersRouteWithChildren
   '/dashboard': typeof AppDashboardRoute
@@ -345,6 +365,7 @@ export interface FileRoutesByFullPath {
   '/admin/api-request-analytics': typeof AppAdminApiRequestAnalyticsRoute
   '/admin/audit-logs': typeof AppAdminAuditLogsRoute
   '/admin/community-stats': typeof AppAdminCommunityStatsRoute
+  '/admin/email-templates': typeof AppAdminEmailTemplatesRoute
   '/admin/jobs': typeof AppAdminJobsRoute
   '/admin/maintenance': typeof AppAdminMaintenanceRoute
   '/admin/notifications': typeof AppAdminNotificationsRoute
@@ -368,9 +389,11 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/maintenance': typeof MaintenanceRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/showcase': typeof ShowcaseRoute
   '/verify-email': typeof VerifyEmailRoute
   '/admin': typeof AppAdminRouteWithChildren
   '/analytics': typeof AppAnalyticsRoute
+  '/announcements': typeof AppAnnouncementsRoute
   '/bookmarks': typeof AppBookmarksRoute
   '/builders': typeof AppBuildersRouteWithChildren
   '/dashboard': typeof AppDashboardRoute
@@ -394,6 +417,7 @@ export interface FileRoutesByTo {
   '/admin/api-request-analytics': typeof AppAdminApiRequestAnalyticsRoute
   '/admin/audit-logs': typeof AppAdminAuditLogsRoute
   '/admin/community-stats': typeof AppAdminCommunityStatsRoute
+  '/admin/email-templates': typeof AppAdminEmailTemplatesRoute
   '/admin/jobs': typeof AppAdminJobsRoute
   '/admin/maintenance': typeof AppAdminMaintenanceRoute
   '/admin/notifications': typeof AppAdminNotificationsRoute
@@ -419,9 +443,11 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute
   '/maintenance': typeof MaintenanceRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/showcase': typeof ShowcaseRoute
   '/verify-email': typeof VerifyEmailRoute
   '/_app/admin': typeof AppAdminRouteWithChildren
   '/_app/analytics': typeof AppAnalyticsRoute
+  '/_app/announcements': typeof AppAnnouncementsRoute
   '/_app/bookmarks': typeof AppBookmarksRoute
   '/_app/builders': typeof AppBuildersRouteWithChildren
   '/_app/dashboard': typeof AppDashboardRoute
@@ -446,6 +472,7 @@ export interface FileRoutesById {
   '/_app/admin/api-request-analytics': typeof AppAdminApiRequestAnalyticsRoute
   '/_app/admin/audit-logs': typeof AppAdminAuditLogsRoute
   '/_app/admin/community-stats': typeof AppAdminCommunityStatsRoute
+  '/_app/admin/email-templates': typeof AppAdminEmailTemplatesRoute
   '/_app/admin/jobs': typeof AppAdminJobsRoute
   '/_app/admin/maintenance': typeof AppAdminMaintenanceRoute
   '/_app/admin/notifications': typeof AppAdminNotificationsRoute
@@ -471,9 +498,11 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/maintenance'
     | '/reset-password'
+    | '/showcase'
     | '/verify-email'
     | '/admin'
     | '/analytics'
+    | '/announcements'
     | '/bookmarks'
     | '/builders'
     | '/dashboard'
@@ -498,6 +527,7 @@ export interface FileRouteTypes {
     | '/admin/api-request-analytics'
     | '/admin/audit-logs'
     | '/admin/community-stats'
+    | '/admin/email-templates'
     | '/admin/jobs'
     | '/admin/maintenance'
     | '/admin/notifications'
@@ -521,9 +551,11 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/maintenance'
     | '/reset-password'
+    | '/showcase'
     | '/verify-email'
     | '/admin'
     | '/analytics'
+    | '/announcements'
     | '/bookmarks'
     | '/builders'
     | '/dashboard'
@@ -547,6 +579,7 @@ export interface FileRouteTypes {
     | '/admin/api-request-analytics'
     | '/admin/audit-logs'
     | '/admin/community-stats'
+    | '/admin/email-templates'
     | '/admin/jobs'
     | '/admin/maintenance'
     | '/admin/notifications'
@@ -571,9 +604,11 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/maintenance'
     | '/reset-password'
+    | '/showcase'
     | '/verify-email'
     | '/_app/admin'
     | '/_app/analytics'
+    | '/_app/announcements'
     | '/_app/bookmarks'
     | '/_app/builders'
     | '/_app/dashboard'
@@ -598,6 +633,7 @@ export interface FileRouteTypes {
     | '/_app/admin/api-request-analytics'
     | '/_app/admin/audit-logs'
     | '/_app/admin/community-stats'
+    | '/_app/admin/email-templates'
     | '/_app/admin/jobs'
     | '/_app/admin/maintenance'
     | '/_app/admin/notifications'
@@ -623,6 +659,7 @@ export interface RootRouteChildren {
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   MaintenanceRoute: typeof MaintenanceRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ShowcaseRoute: typeof ShowcaseRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
   PortfolioUsernameRoute: typeof PortfolioUsernameRoute
 }
@@ -634,6 +671,13 @@ declare module '@tanstack/react-router' {
       path: '/verify-email'
       fullPath: '/verify-email'
       preLoaderRoute: typeof VerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/showcase': {
+      id: '/showcase'
+      path: '/showcase'
+      fullPath: '/showcase'
+      preLoaderRoute: typeof ShowcaseRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -832,6 +876,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppBookmarksRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/announcements': {
+      id: '/_app/announcements'
+      path: '/announcements'
+      fullPath: '/announcements'
+      preLoaderRoute: typeof AppAnnouncementsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/analytics': {
       id: '/_app/analytics'
       path: '/analytics'
@@ -930,6 +981,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdminJobsRouteImport
       parentRoute: typeof AppAdminRoute
     }
+    '/_app/admin/email-templates': {
+      id: '/_app/admin/email-templates'
+      path: '/email-templates'
+      fullPath: '/admin/email-templates'
+      preLoaderRoute: typeof AppAdminEmailTemplatesRouteImport
+      parentRoute: typeof AppAdminRoute
+    }
     '/_app/admin/community-stats': {
       id: '/_app/admin/community-stats'
       path: '/community-stats'
@@ -979,6 +1037,7 @@ interface AppAdminRouteChildren {
   AppAdminApiRequestAnalyticsRoute: typeof AppAdminApiRequestAnalyticsRoute
   AppAdminAuditLogsRoute: typeof AppAdminAuditLogsRoute
   AppAdminCommunityStatsRoute: typeof AppAdminCommunityStatsRoute
+  AppAdminEmailTemplatesRoute: typeof AppAdminEmailTemplatesRoute
   AppAdminJobsRoute: typeof AppAdminJobsRoute
   AppAdminMaintenanceRoute: typeof AppAdminMaintenanceRoute
   AppAdminNotificationsRoute: typeof AppAdminNotificationsRoute
@@ -989,6 +1048,7 @@ const AppAdminRouteChildren: AppAdminRouteChildren = {
   AppAdminApiRequestAnalyticsRoute: AppAdminApiRequestAnalyticsRoute,
   AppAdminAuditLogsRoute: AppAdminAuditLogsRoute,
   AppAdminCommunityStatsRoute: AppAdminCommunityStatsRoute,
+  AppAdminEmailTemplatesRoute: AppAdminEmailTemplatesRoute,
   AppAdminJobsRoute: AppAdminJobsRoute,
   AppAdminMaintenanceRoute: AppAdminMaintenanceRoute,
   AppAdminNotificationsRoute: AppAdminNotificationsRoute,
@@ -1091,6 +1151,7 @@ const AppSettingsRouteWithChildren = AppSettingsRoute._addFileChildren(
 interface AppRouteChildren {
   AppAdminRoute: typeof AppAdminRouteWithChildren
   AppAnalyticsRoute: typeof AppAnalyticsRoute
+  AppAnnouncementsRoute: typeof AppAnnouncementsRoute
   AppBookmarksRoute: typeof AppBookmarksRoute
   AppBuildersRoute: typeof AppBuildersRouteWithChildren
   AppDashboardRoute: typeof AppDashboardRoute
@@ -1117,6 +1178,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppAdminRoute: AppAdminRouteWithChildren,
   AppAnalyticsRoute: AppAnalyticsRoute,
+  AppAnnouncementsRoute: AppAnnouncementsRoute,
   AppBookmarksRoute: AppBookmarksRoute,
   AppBuildersRoute: AppBuildersRouteWithChildren,
   AppDashboardRoute: AppDashboardRoute,
@@ -1150,6 +1212,7 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotPasswordRoute: ForgotPasswordRoute,
   MaintenanceRoute: MaintenanceRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ShowcaseRoute: ShowcaseRoute,
   VerifyEmailRoute: VerifyEmailRoute,
   PortfolioUsernameRoute: PortfolioUsernameRoute,
 }

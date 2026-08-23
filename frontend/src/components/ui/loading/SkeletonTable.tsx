@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 export interface SkeletonTableProps {
   rows?: number;
@@ -9,12 +9,20 @@ export interface SkeletonTableProps {
 export const SkeletonTable: React.FC<SkeletonTableProps> = ({
   rows = 5,
   columns = 4,
-  className = '',
+  className = "",
 }) => {
   return (
-    <div className={`w-full overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 p-4 ${className}`} role="status" aria-busy="true" aria-label="Loading data table">
+    <div
+      className={`w-full overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 p-4 ${className}`}
+      role="status"
+      aria-busy="true"
+      aria-label="Loading data table"
+    >
       <div className="animate-pulse space-y-4">
-        <div className="grid gap-4 pb-3 border-b border-slate-200 dark:border-slate-800" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
+        <div
+          className="grid gap-4 pb-3 border-b border-slate-200 dark:border-slate-800"
+          style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+        >
           {[...Array(columns)].map((_, cIdx) => (
             <div key={cIdx} className="h-4 bg-slate-300 dark:bg-slate-700/60 rounded w-3/4"></div>
           ))}
@@ -30,7 +38,7 @@ export const SkeletonTable: React.FC<SkeletonTableProps> = ({
               <div
                 key={cIdx}
                 className="h-3.5 bg-slate-200 dark:bg-slate-700/40 rounded"
-                style={{ width: cIdx === 0 ? '80%' : cIdx === columns - 1 ? '50%' : '65%' }}
+                style={{ width: cIdx === 0 ? "80%" : cIdx === columns - 1 ? "50%" : "65%" }}
               ></div>
             ))}
           </div>

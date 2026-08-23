@@ -50,6 +50,7 @@ from app.routers import (
     users,
     webhooks,
     websockets,
+    feature_announcements,
 )
 
 api_v1_router = APIRouter(prefix="/api/v1")
@@ -151,3 +152,5 @@ api_v1_router.include_router(security_events.router)
 api_v1_router.include_router(
     hackathons.router, prefix="/hackathons", tags=["Hackathons"]
 )
+api_v1_router.include_router(feature_announcements.router)
+

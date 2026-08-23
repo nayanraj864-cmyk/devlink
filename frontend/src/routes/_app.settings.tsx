@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/shared/primitives";
@@ -25,18 +25,21 @@ import {
   ChevronRight,
   ExternalLink,
   HelpCircle,
+  Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { currentUser } from "@/mocks/seed";
 import { LoadingButton } from "@/components/shared/LoadingButton";
-import { exportApi } from "@/api";
+import { exportApi, authApi } from "@/api";
+import { usersService } from "@/services";
 import { TypoSection, TypoCaption, TypoHeading } from "@/components/shared/Typography";
 
 const tabs = [
   { id: "account", label: "Account", icon: User },
   { id: "appearance", label: "Appearance", icon: Palette },
   { id: "notifications", label: "Notifications", icon: Bell },
+  { id: "privacy", label: "Privacy", icon: Lock },
   { id: "security", label: "Security", icon: Shield },
   { id: "billing", label: "Billing", icon: CreditCard },
   { id: "export", label: "Export Data", icon: Download },
@@ -76,6 +79,243 @@ function SettingsPage() {
     weeklyDigest: true,
     marketingEmails: false,
   });
+
+  // Profile Form States
+  const [profileData, setProfileData] = useState({
+    first_name: "",
+    last_name: "",
+    username: "",
+    email: "",
+    bio: "",
+    version: 1,
+  });
+  const [originalProfileData, setOriginalProfileData] = useState<any>(null);
+  const [fullNameInput, setFullNameInput] = useState("");
+  const [isAutoSaveEnabled, setIsAutoSaveEnabled] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"saved" | "unsaved" | "saving" | "error" | "conflict">("saved");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [loadingProfile, setLoadingProfile] = useState(true);
+
+  // Debounce timeout ref
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load user profile on mount
+  useEffect(() => {
+    async function loadProfile() {
+      setLoadingProfile(true);
+      try {
+        const user = await usersService.getMe();
+        if (user) {
+          const loadedData = {
+            first_name: user.first_name || "",
+            last_name: user.last_name || "",
+            username: user.username || user.handle || "",
+            email: user.email || "",
+            bio: user.bio || "",
+            version: user.version || 1,
+          };
+          setProfileData(loadedData);
+          setOriginalProfileData(loadedData);
+          setFullNameInput(`${loadedData.first_name} ${loadedData.last_name}`.trim());
+          setSaveStatus("saved");
+        }
+      } catch (err) {
+        console.error("Failed to load user profile:", err);
+      } finally {
+        setLoadingProfile(false);
+      }
+    }
+    loadProfile();
+  }, []);
+
+  const performSave = async (force = false) => {
+    setSaveStatus("saving");
+    setErrorMessage("");
+    try {
+      const payload: Record<string, any> = {
+        first_name: profileData.first_name,
+        last_name: profileData.last_name,
+        username: profileData.username,
+        email: profileData.email,
+        bio: profileData.bio,
+      };
+      if (!force) {
+        payload.version = profileData.version;
+      }
+      const updatedUser = await usersService.updateMe(payload);
+      if (updatedUser) {
+        const newData = {
+          first_name: (updatedUser as any).first_name || "",
+          last_name: (updatedUser as any).last_name || "",
+          username: (updatedUser as any).username || (updatedUser as any).handle || "",
+          email: (updatedUser as any).email || "",
+          bio: (updatedUser as any).bio || "",
+          version: (updatedUser as any).version || 1,
+        };
+        setProfileData(newData);
+        setOriginalProfileData(newData);
+        setFullNameInput(`${newData.first_name} ${newData.last_name}`.trim());
+        setSaveStatus("saved");
+        toast.success("Profile saved successfully");
+      }
+    } catch (err: any) {
+      if (err?.status === 409 || err?.statusCode === 409) {
+        setSaveStatus("conflict");
+        setErrorMessage("Version conflict: The profile has been updated by another request. Please refresh and try again.");
+        toast.error("Conflict detected: Profile updated elsewhere.");
+      } else {
+        setSaveStatus("error");
+        setErrorMessage(err?.message || "Failed to save profile changes.");
+        toast.error("Error saving profile changes.");
+      }
+    }
+  };
+
+  // Debounced auto-save listener
+  useEffect(() => {
+    if (!originalProfileData) return;
+
+    const hasChanges =
+      profileData.first_name !== originalProfileData.first_name ||
+      profileData.last_name !== originalProfileData.last_name ||
+      profileData.username !== originalProfileData.username ||
+      profileData.email !== originalProfileData.email ||
+      profileData.bio !== originalProfileData.bio;
+
+    if (!hasChanges) {
+      setSaveStatus("saved");
+      return;
+    }
+
+    setSaveStatus("unsaved");
+
+    if (isAutoSaveEnabled) {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+      debounceTimeoutRef.current = setTimeout(() => {
+        performSave(false);
+      }, 1500);
+    }
+
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, [profileData.first_name, profileData.last_name, profileData.username, profileData.email, profileData.bio, isAutoSaveEnabled]);
+
+  const handleNameChange = (val: string) => {
+    setFullNameInput(val);
+    const parts = val.trim().split(/\s+/);
+    const firstName = parts[0] || "";
+    const lastName = parts.slice(1).join(" ") || "";
+    setProfileData((prev) => ({
+      ...prev,
+      first_name: firstName,
+      last_name: lastName,
+    }));
+  };
+
+  const handleDiscardChanges = () => {
+    if (originalProfileData) {
+      setProfileData(originalProfileData);
+      setFullNameInput(`${originalProfileData.first_name} ${originalProfileData.last_name}`.trim());
+      setSaveStatus("saved");
+      setErrorMessage("");
+      toast.success("Changes discarded");
+    }
+  };
+
+  const renderSaveStatusIndicator = () => {
+    switch (saveStatus) {
+      case "saved":
+        return (
+          <div className="flex items-center gap-1.5 text-emerald-500 text-[13px] font-medium animate-fade-in">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            All changes saved
+          </div>
+        );
+      case "saving":
+        return (
+          <div className="flex items-center gap-1.5 text-amber-500 text-[13px] font-medium animate-fade-in">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-ping" />
+            Saving changes...
+          </div>
+        );
+      case "unsaved":
+        return (
+          <div className="flex items-center gap-1.5 text-muted-foreground text-[13px] font-medium">
+            <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
+            Unsaved changes
+          </div>
+        );
+      case "conflict":
+        return (
+          <div className="flex items-center gap-1.5 text-destructive text-[13px] font-medium">
+            <span className="h-1.5 w-1.5 rounded-full bg-destructive" />
+            Conflict detected
+          </div>
+        );
+      case "error":
+        return (
+          <div className="flex items-center gap-1.5 text-destructive text-[13px] font-medium">
+            <span className="h-1.5 w-1.5 rounded-full bg-destructive" />
+            Save failed
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  // Profile Privacy States
+  const [isPrivateProfile, setIsPrivateProfile] = useState(false);
+  const [privacySettings, setPrivacySettings] = useState({
+    email: "private",
+    github: "public",
+    resume: "public",
+    social_links: "public",
+    availability: "public",
+    activity: "public",
+  });
+  const [loadingPrivacy, setLoadingPrivacy] = useState(false);
+  const [savingPrivacy, setSavingPrivacy] = useState(false);
+
+  useEffect(() => {
+    async function loadPrivacy() {
+      setLoadingPrivacy(true);
+      try {
+        const settings = await usersService.getPrivacySettings();
+        if (settings) {
+          setPrivacySettings((prev) => ({ ...prev, ...settings }));
+        }
+        const user = await authApi.me();
+        if (user) {
+          setIsPrivateProfile(!!(user as any).is_private);
+        }
+      } catch (err) {
+        console.error("Failed to load privacy settings:", err);
+      } finally {
+        setLoadingPrivacy(false);
+      }
+    }
+    loadPrivacy();
+  }, []);
+
+  const handleSavePrivacy = async () => {
+    setSavingPrivacy(true);
+    try {
+      await usersService.updatePrivacySettings(privacySettings);
+      await usersService.updateMe({ is_private: isPrivateProfile });
+      toast.success("Privacy settings updated successfully");
+    } catch (err) {
+      toast.error("Failed to update privacy settings");
+      console.error(err);
+    } finally {
+      setSavingPrivacy(false);
+    }
+  };
 
   const handleConfirmDelete = async () => {
     await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -203,73 +443,155 @@ function SettingsPage() {
                       </Button>
                     </div>
                   </div>
-                </div>
+                </div>                {loadingProfile ? (
+                  <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
+                    Loading profile details...
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Conflict Resolution Banner */}
+                    {saveStatus === "conflict" && (
+                      <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 space-y-3">
+                        <div className="space-y-1">
+                          <p className="text-sm font-semibold text-destructive animate-pulse">Version Conflict Detected</p>
+                          <p className="text-[13px] text-muted-foreground">
+                            This profile has been modified on another device or session. What would you like to do?
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="text-xs h-8"
+                            onClick={() => performSave(true)}
+                          >
+                            Keep My Changes (Force Overwrite)
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs h-8"
+                            onClick={async () => {
+                              const user = await usersService.getMe();
+                              if (user) {
+                                const loadedData = {
+                                  first_name: user.first_name || "",
+                                  last_name: user.last_name || "",
+                                  username: user.username || user.handle || "",
+                                  email: user.email || "",
+                                  bio: user.bio || "",
+                                  version: user.version || 1,
+                                };
+                                setProfileData(loadedData);
+                                setOriginalProfileData(loadedData);
+                                setFullNameInput(`${loadedData.first_name} ${loadedData.last_name}`.trim());
+                                setSaveStatus("saved");
+                                setErrorMessage("");
+                                toast.success("Profile reloaded from server");
+                              }
+                            }}
+                          >
+                            Discard & Reload Latest
+                          </Button>
+                        </div>
+                      </div>
+                    )}
 
-                <form
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    if (savingAccount) return;
-                    setSavingAccount(true);
-                    try {
-                      await new Promise((r) => setTimeout(r, 800));
-                      toast.success("Profile saved successfully");
-                    } finally {
-                      setSavingAccount(false);
-                    }
-                  }}
-                  className="space-y-5"
-                >
-                  <div className="grid gap-5 sm:grid-cols-2">
-                    <div>
-                      <label className={lbl}>Full name</label>
-                      <input
-                        className={inp}
-                        defaultValue={currentUser.name}
-                        placeholder="Your full name"
-                      />
+                    {/* Auto-Save Settings Row */}
+                    <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border bg-muted/20 p-4">
+                      <div className="flex items-center gap-3">
+                        <Switch
+                          id="auto-save"
+                          checked={isAutoSaveEnabled}
+                          onCheckedChange={setIsAutoSaveEnabled}
+                        />
+                        <div>
+                          <Label htmlFor="auto-save" className="text-sm font-semibold text-foreground">
+                            Enable Auto-Save
+                          </Label>
+                          <TypoCaption as="p">Changes save automatically after typing stops</TypoCaption>
+                        </div>
+                      </div>
+                      {renderSaveStatusIndicator()}
                     </div>
-                    <div>
-                      <label className={lbl}>Username</label>
-                      <input
-                        className={inp}
-                        defaultValue={currentUser.handle}
-                        placeholder="username"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className={lbl}>Email</label>
-                    <input
-                      className={inp}
-                      defaultValue="nancy@devlink.io"
-                      type="email"
-                      placeholder="email@example.com"
-                    />
-                  </div>
-                  <div>
-                    <label className={lbl}>Bio</label>
-                    <textarea
-                      rows={3}
-                      className={inp}
-                      defaultValue="Product engineer. React / Postgres / Rust."
-                      placeholder="Tell us about yourself"
-                    />
-                    <TypoCaption as="p">Brief description for your profile</TypoCaption>
-                  </div>
-                  <div className="flex items-center gap-3 pt-2">
-                    <Button type="submit" className="gap-2" disabled={savingAccount}>
-                      <Save size={15} />
-                      {savingAccount ? "Saving..." : "Save changes"}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => toast.success("Changes discarded")}
+
+                    <form
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        if (saveStatus === "saving") return;
+                        await performSave(false);
+                      }}
+                      className="space-y-5"
                     >
-                      Cancel
-                    </Button>
+                      <div className="grid gap-5 sm:grid-cols-2">
+                        <div>
+                          <label className={lbl}>Full name</label>
+                          <input
+                            className={inp}
+                            value={fullNameInput}
+                            onChange={(e) => handleNameChange(e.target.value)}
+                            placeholder="Your full name"
+                          />
+                        </div>
+                        <div>
+                          <label className={lbl}>Username</label>
+                          <input
+                            className={inp}
+                            value={profileData.username}
+                            onChange={(e) =>
+                              setProfileData((prev) => ({ ...prev, username: e.target.value }))
+                            }
+                            placeholder="username"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className={lbl}>Email</label>
+                        <input
+                          className={inp}
+                          value={profileData.email}
+                          onChange={(e) =>
+                            setProfileData((prev) => ({ ...prev, email: e.target.value }))
+                          }
+                          type="email"
+                          placeholder="email@example.com"
+                        />
+                      </div>
+                      <div>
+                        <label className={lbl}>Bio</label>
+                        <textarea
+                          rows={3}
+                          className={inp}
+                          value={profileData.bio}
+                          onChange={(e) =>
+                            setProfileData((prev) => ({ ...prev, bio: e.target.value }))
+                          }
+                          placeholder="Tell us about yourself"
+                        />
+                        <TypoCaption as="p">Brief description for your profile</TypoCaption>
+                      </div>
+
+                      {errorMessage && (
+                        <p className="text-xs font-medium text-destructive">{errorMessage}</p>
+                      )}
+
+                      <div className="flex items-center gap-3 pt-2">
+                        <Button type="submit" className="gap-2" disabled={saveStatus === "saving" || saveStatus === "saved" || saveStatus === "conflict"}>
+                          <Save size={15} />
+                          {saveStatus === "saving" ? "Saving..." : "Save changes"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={handleDiscardChanges}
+                          disabled={saveStatus === "saving" || saveStatus === "saved"}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </form>
                   </div>
-                </form>
+                )}
 
                 <Separator />
 
@@ -468,6 +790,139 @@ function SettingsPage() {
             )}
 
             {tab === "security" && <SecurityDashboard userEmail="nancy@example.com" />}
+
+            {tab === "privacy" && (
+              <div className="p-6 space-y-6">
+                <div>
+                  <TypoHeading as="h2">Privacy Settings</TypoHeading>
+                  <TypoCaption as="p">Control who can view your profile and activities</TypoCaption>
+                </div>
+
+                {loadingPrivacy ? (
+                  <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
+                    Loading privacy settings...
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Public/Private Profile Toggle */}
+                    <div className="rounded-lg border border-border bg-muted/30 p-5 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5 pr-4">
+                          <Label className="text-sm font-semibold text-foreground">
+                            Private Profile
+                          </Label>
+                          <TypoCaption as="p">
+                            When enabled, your profile details will only be visible to you and followers.
+                          </TypoCaption>
+                        </div>
+                        <Switch
+                          checked={isPrivateProfile}
+                          onCheckedChange={setIsPrivateProfile}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Visibility Dropdowns */}
+                    <div className="space-y-4">
+                      <TypoSection>Visibility Controls</TypoSection>
+
+                      <div className="grid gap-5 sm:grid-cols-2">
+                        {/* Email Visibility */}
+                        <div className="flex flex-col space-y-1.5">
+                          <label className={lbl}>Email Visibility</label>
+                          <select
+                            className={inp}
+                            value={privacySettings.email}
+                            onChange={(e) =>
+                              setPrivacySettings((prev) => ({
+                                ...prev,
+                                email: e.target.value,
+                              }))
+                            }
+                          >
+                            <option value="public">Public</option>
+                            <option value="authenticated">Authenticated Users</option>
+                            <option value="followers">Followers Only</option>
+                            <option value="private">Private (Only Me)</option>
+                          </select>
+                          <TypoCaption>Who can see your public contact email address.</TypoCaption>
+                        </div>
+
+                        {/* Activity Visibility */}
+                        <div className="flex flex-col space-y-1.5">
+                          <label className={lbl}>Activity & Contribution History</label>
+                          <select
+                            className={inp}
+                            value={privacySettings.activity}
+                            onChange={(e) =>
+                              setPrivacySettings((prev) => ({
+                                ...prev,
+                                activity: e.target.value,
+                              }))
+                            }
+                          >
+                            <option value="public">Public</option>
+                            <option value="authenticated">Authenticated Users</option>
+                            <option value="followers">Followers Only</option>
+                            <option value="private">Private (Only Me)</option>
+                          </select>
+                          <TypoCaption>Who can view your reputation log & contribution heatmap.</TypoCaption>
+                        </div>
+
+                        {/* GitHub Visibility */}
+                        <div className="flex flex-col space-y-1.5">
+                          <label className={lbl}>GitHub Connection</label>
+                          <select
+                            className={inp}
+                            value={privacySettings.github}
+                            onChange={(e) =>
+                              setPrivacySettings((prev) => ({
+                                ...prev,
+                                github: e.target.value,
+                              }))
+                            }
+                          >
+                            <option value="public">Public</option>
+                            <option value="authenticated">Authenticated Users</option>
+                            <option value="followers">Followers Only</option>
+                            <option value="private">Private (Only Me)</option>
+                          </select>
+                          <TypoCaption>Visibility of your linked GitHub profile info.</TypoCaption>
+                        </div>
+
+                        {/* Resume Visibility */}
+                        <div className="flex flex-col space-y-1.5">
+                          <label className={lbl}>Resume / CV</label>
+                          <select
+                            className={inp}
+                            value={privacySettings.resume}
+                            onChange={(e) =>
+                              setPrivacySettings((prev) => ({
+                                ...prev,
+                                resume: e.target.value,
+                              }))
+                            }
+                          >
+                            <option value="public">Public</option>
+                            <option value="authenticated">Authenticated Users</option>
+                            <option value="followers">Followers Only</option>
+                            <option value="private">Private (Only Me)</option>
+                          </select>
+                          <TypoCaption>Who is allowed to view or download your uploaded resume.</TypoCaption>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 pt-4">
+                      <Button onClick={handleSavePrivacy} className="gap-2" disabled={savingPrivacy}>
+                        <Save size={15} />
+                        {savingPrivacy ? "Saving..." : "Save Privacy Settings"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {tab === "billing" && (
               <div className="p-6 space-y-6">

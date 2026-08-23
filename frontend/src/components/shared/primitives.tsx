@@ -10,29 +10,44 @@ export function SectionHeader({
   title,
   action,
   actionTo,
+  onAction,
   className,
+  showDot = true,
 }: {
-  title: string;
+  title: ReactNode;
   action?: string;
   actionTo?: string;
+  onAction?: () => void;
   className?: string;
+  showDot?: boolean;
 }) {
   return (
-    <div className={cn("flex items-center justify-between px-5 pt-4 pb-3.5", className)}>
-      <TypoSection>
-        <span className="inline-block h-2 w-2 rounded-full bg-primary/80" />
-        {title}
-      </TypoSection>
+    <div className={cn("flex items-center justify-between gap-3 px-5 pt-4 pb-3.5", className)}>
+      <div className="flex items-center gap-[7px] min-w-0">
+        {showDot && (
+          <span
+            className="h-1.5 w-1.5 rounded-full bg-primary shrink-0"
+            aria-hidden="true"
+          />
+        )}
+        <h3 className="text-base sm:text-[17px] font-semibold leading-tight text-foreground tracking-tight">
+          {title}
+        </h3>
+      </div>
       {action &&
         (actionTo ? (
           <Link
             to={actionTo}
-            className="text-[12px] font-semibold text-primary transition-all hover:text-primary/80 hover:underline"
+            className="text-[12px] font-semibold text-primary transition-all hover:text-primary/80 hover:underline shrink-0 whitespace-nowrap ml-auto"
           >
             {action}
           </Link>
         ) : (
-          <button className="text-[12px] font-semibold text-primary transition-all hover:text-primary/80 hover:underline">
+          <button
+            type="button"
+            onClick={onAction}
+            className="text-[12px] font-semibold text-primary transition-all hover:text-primary/80 hover:underline shrink-0 whitespace-nowrap ml-auto cursor-pointer"
+          >
             {action}
           </button>
         ))}

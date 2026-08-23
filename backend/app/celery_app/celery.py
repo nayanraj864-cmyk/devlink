@@ -1,5 +1,5 @@
 from celery import Celery
-from celery.schedules import crontab
+from celery.schedules import crontab, timedelta
 
 from app.core.config import settings
 
@@ -12,6 +12,7 @@ celery_app = Celery(
         "app.celery_app.tasks.notification_tasks",
         "app.celery_app.tasks.image_tasks",
         "app.celery_app.tasks.digest_tasks",
+        "app.celery_app.tasks.message_tasks",
     ],
 )
 
@@ -30,6 +31,11 @@ celery_app.conf.beat_schedule = {
     "send-daily-digest": {
         "task": "app.celery_app.tasks.digest_tasks.send_daily_digest",
         "schedule": crontab(hour=0, minute=0),  # Midnight UTC
+        "args": (),
+    },
+    "send-scheduled-messages": {
+        "task": "app.celery_app.tasks.message_tasks.send_scheduled_messages",
+        "schedule": timedelta(seconds=60),
         "args": (),
     },
 }

@@ -5,7 +5,8 @@ import type { UUID, ApplicationResponse } from "@/lib/api";
 import { getProjectApplications } from "@/lib/api";
 import { ApplicationStatusBadge } from "./ApplicationStatusBadge";
 import { Button } from "@/components/ui/button";
-import { Card, Skeleton } from "@/components/shared/primitives";
+import { Card, EmptyState, Skeleton } from "@/components/shared/primitives";
+import { SearchX } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
@@ -97,10 +98,13 @@ export function ApplicationsList({ projectId, className }: Props) {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="mt-6 text-center">
-          <p className="text-[13px] font-semibold text-foreground">No applications found</p>
-          <TypoCaption as="p">Try adjusting your search.</TypoCaption>
-        </div>
+        <EmptyState
+          icon={SearchX}
+          title="No applications found"
+          desc="Try a different search, or clear it to see every application."
+          action={<Button variant="outline" size="sm" onClick={() => setQ("")}>Clear search</Button>}
+          className="mt-4 rounded-xl border border-dashed border-border/80 bg-muted/20 py-9"
+        />
       ) : (
         <ul className="mt-4 divide-y divide-border">
           {filtered.map((a: ApplicationResponse) => {

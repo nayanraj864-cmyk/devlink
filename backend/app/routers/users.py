@@ -19,9 +19,10 @@ from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
 from app.core.cache import cache_manager, cached
-from app.dependencies import get_current_user, get_database
+from app.dependencies import get_current_user, get_database, get_optional_current_user
 from app.middleware.rate_limit import SEARCH_LIMIT, limiter
 from app.models.user import User
+from app.services.block_service import BlockService
 from app.schemas.user import (
     CollaborationStatus,
     CurrentUser,
@@ -210,10 +211,6 @@ def get_user_profile_completion(
     return UserService.get_profile_completion(db, user)
 
 
-from app.dependencies import get_current_user, get_database, get_optional_current_user
-from app.services.block_service import BlockService
-
-
 @router.get(
     "/by-username/{username}",
     response_model=UserResponse,
@@ -394,7 +391,10 @@ def get_collaboration_status(
     Get the current user's live collaboration presence status
     (coding, reviewing_pr, in_meeting, looking_for_project, available).
     """
-    return {"user_id": str(current_user.id), "status": current_user.collaboration_status}
+    return {
+        "user_id": str(current_user.id),
+        "status": current_user.collaboration_status,
+    }
 
 
 @router.put(
@@ -404,7 +404,8 @@ def get_collaboration_status(
 )
 def set_collaboration_status(
     status_val: CollaborationStatus = Query(
-        ..., description="One of: coding, reviewing_pr, in_meeting, looking_for_project, available"
+        ...,
+        description="One of: coding, reviewing_pr, in_meeting, looking_for_project, available",
     ),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_database),
@@ -527,6 +528,7 @@ async def upload_avatar(
     result = UserService.update_profile_image(db, current_user, full_avatar_url)
     cache_manager.delete_pattern(f"user:*{current_user.id}*")
     return result
+
 
 @router.post(
     "/me/voice-introduction",
@@ -748,10 +750,7 @@ def verify_user(
     db: Session = Depends(get_database),
 ):
 
-    user = UserService.get_user(
-        db,
-        user_id,
-    )
+    user = UserService.get_user(db, user_id)
 
     if user is None:
         raise HTTPException(
