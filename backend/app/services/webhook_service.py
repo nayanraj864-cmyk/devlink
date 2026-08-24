@@ -16,6 +16,12 @@ from app.models.webhook import (
     WebhookDeadLetterQueue,
     WebhookDeliveryStatus,
 )
+from app.utils.url_safety import (
+    SafeTarget,
+    UnsafeURL,
+    pin_target,
+    validate_outbound_url,
+)
 
 logger = structlog.get_logger("devlink.webhooks")
 
@@ -39,18 +45,43 @@ def calculate_backoff_delay(
 
 
 class WebhookService:
+    #: How a destination is checked before we connect to it.
+    #:
+    #: A class attribute rather than a direct call so it can be substituted:
+    #: validation resolves the hostname, and a unit test that depends on DNS is
+    #: a unit test that fails on a train.
+    validate_target = staticmethod(validate_outbound_url)
+
+    @classmethod
+    def canonical_body(cls, payload: Dict[str, Any] | str) -> bytes:
+        """
+        The bytes we sign, which are the bytes we send.
+
+        There is only one function here on purpose. The signature used to be
+        computed over ``json.dumps(payload, sort_keys=True)`` while the request
+        body came from ``httpx``'s own serialisation of the same dict -- which
+        uses ``separators=(",", ":")``, ``ensure_ascii=False`` and insertion
+        order. Three differences, any one of which is enough to make the
+        signature un-verifiable by the only sane procedure a receiver has: HMAC
+        the bytes you received and compare.
+
+        ``sort_keys`` is kept so the same payload signs identically on a retry
+        regardless of dict ordering, and the separators match what a receiver
+        gets so nothing has to reverse-engineer our serialiser.
+        """
+        if isinstance(payload, (dict, list)):
+            return json.dumps(
+                payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+            ).encode("utf-8")
+        return str(payload).encode("utf-8")
+
     @classmethod
     def generate_signature(cls, payload: Dict[str, Any] | str, secret: str) -> str:
         """
-        Generates an HMAC-SHA256 signature for webhook payload verification.
+        Generates an HMAC-SHA256 signature over the exact request body.
         """
-        if isinstance(payload, dict):
-            payload_bytes = json.dumps(payload, sort_keys=True).encode("utf-8")
-        else:
-            payload_bytes = str(payload).encode("utf-8")
-
         signature = hmac.new(
-            secret.encode("utf-8"), payload_bytes, hashlib.sha256
+            secret.encode("utf-8"), cls.canonical_body(payload), hashlib.sha256
         ).hexdigest()
         return f"sha256={signature}"
 
@@ -65,6 +96,11 @@ class WebhookService:
         secret: Optional[str] = None,
         max_retries: int = 5,
     ) -> WebhookDelivery:
+        # Checked here as well as in `_execute_delivery` so the caller gets a
+        # readable rejection instead of a stored delivery that quietly failed.
+        # The one in `_execute_delivery` is the guard; this one is the message.
+        cls.validate_target(target_url)
+
         # Include signature header if a shared secret is provided
         req_headers = headers or {}
         if secret:
@@ -93,13 +129,78 @@ class WebhookService:
 
     @classmethod
     def _send_http_request(
-        cls, url: str, payload: dict, headers: dict
+        cls, target: SafeTarget, body: bytes, headers: dict
     ) -> httpx.Response:
-        with httpx.Client(timeout=10.0) as client:
-            return client.post(url, json=payload, headers=headers)
+        """
+        POST the already-serialised body to a validated target.
+
+        Takes ``bytes`` rather than a dict because the caller has already
+        decided what the bytes are -- see :meth:`canonical_body`. Letting
+        ``httpx`` serialise here is what made the signature describe a
+        different payload than the one on the wire.
+
+        The connection is pinned to the address validation approved, the same
+        way link previews do it: handing the hostname to ``httpx`` would let it
+        resolve a second time, and a short-TTL record that answers
+        public-then-private turns the check into decoration.
+
+        Redirects are not followed. A 302 to 169.254.169.254 is the whole
+        attack, and re-validating each hop is not worth it for a webhook -- a
+        receiver that wants us somewhere else can say so in its configuration.
+        """
+        pinned = pin_target(target)
+
+        with httpx.Client(timeout=10.0, follow_redirects=False) as client:
+            return client.post(
+                pinned.url,
+                content=body,
+                headers={**headers, **pinned.headers},
+                extensions=pinned.extensions,
+            )
+
+    @classmethod
+    def _refuse_delivery(
+        cls, db: Session, delivery: WebhookDelivery, reason: str
+    ) -> bool:
+        """
+        Record a delivery we will not attempt, and stop.
+
+        Exhausted rather than failed, because retrying changes nothing: the
+        destination is not one we are willing to connect to, and the backoff
+        schedule would otherwise turn one rejected request into several probes
+        spread over an hour.
+
+        Nothing is written to `response_status_code` or `response_body`. Those
+        are the fields `GET /webhooks/deliveries` hands back, and the point of
+        refusing is that we learned nothing about the destination worth
+        returning.
+        """
+        delivery.status = WebhookDeliveryStatus.EXHAUSTED
+        delivery.next_retry_at = None
+        delivery.last_attempt_at = datetime.now(timezone.utc)
+        delivery.error_message = f"Refused: {reason}"
+        delivery.response_status_code = None
+        delivery.response_body = None
+        db.commit()
+
+        logger.warning(
+            "webhook_target_refused",
+            delivery_id=str(delivery.id),
+            target_url=delivery.target_url,
+            reason=reason,
+        )
+
+        cls._move_to_dlq(db, delivery)
+        return False
 
     @classmethod
     def _execute_delivery(cls, db: Session, delivery: WebhookDelivery) -> bool:
+        # Before the attempt counter moves: nothing was attempted.
+        try:
+            target = cls.validate_target(delivery.target_url)
+        except UnsafeURL as exc:
+            return cls._refuse_delivery(db, delivery, str(exc))
+
         now = datetime.now(timezone.utc)
         delivery.attempts += 1
         delivery.last_attempt_at = now
@@ -118,7 +219,7 @@ class WebhookService:
 
         try:
             response = cls._send_http_request(
-                delivery.target_url, delivery.payload, req_headers
+                target, cls.canonical_body(delivery.payload), req_headers
             )
             status_code = response.status_code
             resp_text = response.text[:2000] if response.text else ""
