@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING, Optional
 from enum import Enum
 
 from sqlalchemy import (
@@ -18,6 +19,9 @@ from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base
+
+if TYPE_CHECKING:
+    from app.models.user_availability import UserAvailability
 
 
 class UserRole(str, Enum):
@@ -438,7 +442,14 @@ class User(Base):
         remote_side="User.id",
     )
 
-    availability: Mapped["UserAvailability"] = relationship(
+    # Named `availability_settings`, not `availability`. There is already an
+    # `availability` column above -- the weekly slots the resume parser fills in
+    # and `UserResponse.availability` serialises -- and a second class attribute
+    # of the same name simply replaces the first. The column became unreachable,
+    # every user serialised with this relationship instead, and for any user
+    # without a `user_availability` row that is None against a
+    # `list[AvailabilitySlot]` field, which is a 500 on register and refresh.
+    availability_settings: Mapped[Optional["UserAvailability"]] = relationship(
         "UserAvailability",
         back_populates="user",
         uselist=False,
