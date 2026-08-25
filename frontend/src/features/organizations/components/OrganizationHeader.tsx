@@ -1,6 +1,7 @@
 import { TypoHeading } from "@/components/shared/Typography";
 import React from "react";
 import { Twitter, Linkedin, Github } from "lucide-react";
+import { sanitizeUrl } from "@/lib/utils";
 
 interface OrganizationHeaderProps {
   name: string;
@@ -82,9 +83,9 @@ export const OrganizationHeader: React.FC<OrganizationHeaderProps> = ({
             </button>
           )}
 
-          {socialLinks?.twitter && (
+          {socialLinks?.twitter && sanitizeUrl(socialLinks.twitter) && (
             <a
-              href={socialLinks.twitter}
+              href={sanitizeUrl(socialLinks.twitter)}
               target="_blank"
               rel="noopener noreferrer"
               className="p-2 text-muted-foreground transition-colors hover:text-foreground"
@@ -92,9 +93,9 @@ export const OrganizationHeader: React.FC<OrganizationHeaderProps> = ({
               <Twitter className="w-5 h-5" />
             </a>
           )}
-          {socialLinks?.github && (
+          {socialLinks?.github && sanitizeUrl(socialLinks.github) && (
             <a
-              href={socialLinks.github}
+              href={sanitizeUrl(socialLinks.github)}
               target="_blank"
               rel="noopener noreferrer"
               className="p-2 text-muted-foreground transition-colors hover:text-foreground"
@@ -102,9 +103,9 @@ export const OrganizationHeader: React.FC<OrganizationHeaderProps> = ({
               <Github className="w-5 h-5" />
             </a>
           )}
-          {socialLinks?.linkedin && (
+          {socialLinks?.linkedin && sanitizeUrl(socialLinks.linkedin) && (
             <a
-              href={socialLinks.linkedin}
+              href={sanitizeUrl(socialLinks.linkedin)}
               target="_blank"
               rel="noopener noreferrer"
               className="p-2 text-muted-foreground transition-colors hover:text-foreground"
@@ -113,9 +114,9 @@ export const OrganizationHeader: React.FC<OrganizationHeaderProps> = ({
             </a>
           )}
 
-          {website && (
+          {website && sanitizeUrl(website) && (
             <a
-              href={website}
+              href={sanitizeUrl(website)}
               target="_blank"
               rel="noopener noreferrer"
               className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"

@@ -65,7 +65,6 @@ export function GreetingHero() {
         <MiniStat icon={<Flame size={13} />} label="Streak" value="12d" />
         <MiniStat icon={<Sparkles size={13} />} label="AI Score" value="96" />
       </div>
-
       {/* SVG Laptop/Plant Illustration */}
       <svg
         width="140"

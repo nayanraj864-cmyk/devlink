@@ -502,11 +502,12 @@ from app.routers import (
 
 # Router inclusions
 app.include_router(skill_matrix.router, prefix="/api", tags=["Skill Matrix"])
+from app.routers import availability
+app.include_router(availability.router, prefix="/api/availability", tags=["Availability"])
+
 from app.routers import github
 
 app.include_router(github.router, prefix="/api", tags=["GitHub Insights"])
-
-app.include_router(media.router, prefix="/api", tags=["Media"])
 from app.routers import link_previews
 
 app.include_router(link_previews.router, prefix="/api", tags=["Link Previews"])
@@ -546,6 +547,8 @@ from app.routers import project_time_logs
 app.include_router(
     project_time_logs.router, prefix="/api", tags=["Project Time Tracking"]
 )
+from app.routers import project_calendar
+app.include_router(project_calendar.router, prefix="/api", tags=["Project Calendar"])
 from app.routers import calendar as calendar_router
 
 app.include_router(calendar_router.router, prefix="/api", tags=["Calendar"])
@@ -660,6 +663,9 @@ app.include_router(
     centralized_analytics.router, prefix="/api", tags=["Centralized Analytics"]
 )
 app.include_router(posts.router, prefix="/api/posts", tags=["Posts"])
+
+from app.routers import donations
+app.include_router(donations.router, prefix="/api")
 
 from app.routers import project_templates
 

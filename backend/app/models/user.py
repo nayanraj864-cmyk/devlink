@@ -271,6 +271,12 @@ class User(Base):
         },
     )
 
+    dashboard_layout: Mapped[dict | None] = mapped_column(
+        JSON,
+        nullable=True,
+        default=None,
+    )
+
     def get_privacy_settings(self) -> dict:
         defaults = {
             "email": "private",
@@ -430,6 +436,13 @@ class User(Base):
         "User",
         foreign_keys=[deleted_by_id],
         remote_side="User.id",
+    )
+
+    availability_setting: Mapped["UserAvailability"] = relationship(
+        "UserAvailability",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
     )
 
     # ------------------------------------------------------------------

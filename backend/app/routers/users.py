@@ -35,6 +35,9 @@ from app.schemas.user import (
     UserResponse,
     UserStats,
     UserUpdate,
+    DashboardWidgetLayout,
+    DashboardLayoutUpdate,
+    DashboardLayoutResponse,
 )
 from app.schemas.user_report import (
     UserReportCreate,
@@ -781,3 +784,64 @@ def report_user(
         raise HTTPException(status_code=400, detail="You cannot report yourself")
 
     return UserService.create_user_report(db, current_user.id, target_user.id, report)
+
+
+# ==========================================================
+# Dashboard Layout Customization (#754)
+# ==========================================================
+
+
+@router.get(
+    "/me/dashboard-layout",
+    response_model=DashboardLayoutResponse,
+    summary="Get Current User Dashboard Layout",
+)
+def get_dashboard_layout(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_database),
+):
+    if not current_user.dashboard_layout or "widgets" not in current_user.dashboard_layout:
+        return DashboardLayoutResponse(widgets=[], is_customized=False)
+    return DashboardLayoutResponse(
+        widgets=[DashboardWidgetLayout(**w) for w in current_user.dashboard_layout["widgets"]],
+        is_customized=True,
+    )
+
+
+@router.put(
+    "/me/dashboard-layout",
+    response_model=DashboardLayoutResponse,
+    summary="Save Current User Dashboard Layout",
+)
+def update_dashboard_layout(
+    layout: DashboardLayoutUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_database),
+):
+    payload = {"widgets": [w.model_dump() for w in layout.widgets]}
+    current_user.dashboard_layout = payload
+    db.commit()
+    db.refresh(current_user)
+    return DashboardLayoutResponse(
+        widgets=layout.widgets,
+        is_customized=True,
+    )
+
+
+@router.delete(
+    "/me/dashboard-layout",
+    response_model=DashboardLayoutResponse,
+    summary="Reset Current User Dashboard Layout to Default",
+)
+def reset_dashboard_layout(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_database),
+):
+    current_user.dashboard_layout = None
+    db.commit()
+    db.refresh(current_user)
+    return DashboardLayoutResponse(
+        widgets=[],
+        is_customized=False,
+    )
+

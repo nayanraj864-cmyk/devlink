@@ -4,6 +4,7 @@ import { projectsService } from "@/services";
 import { Card, TagChip, Avatar, Skeleton } from "@/components/shared/primitives";
 import { api } from "@/api";
 import { ProjectDashboard } from "@/features/projects/components/ProjectDashboard";
+import { ProjectCalendar } from "@/features/projects/components/ProjectCalendar";
 import { CollaborativeWorkspace } from "@/components/projects/CollaborativeWorkspace";
 import { ProjectMembersList } from "@/features/projects/components/ProjectMembersList";
 import { CloneProjectDialog } from "@/components/projects/CloneProjectDialog";
@@ -81,7 +82,7 @@ function ProjectDetail() {
     initialData: loaderData?.project,
   });
   const [tab, setTab] = useState<
-    "overview" | "workspace" | "members" | "activity" | "repos" | "dashboard"
+    "overview" | "workspace" | "members" | "activity" | "repos" | "dashboard" | "calendar"
   >("overview");
   const [copied, setCopied] = useState(false);
   const isOwner = p?.owner === currentUser.name;
@@ -224,8 +225,8 @@ function ProjectDetail() {
   }
 
   const tabs = dashboard
-    ? (["overview", "workspace", "members", "activity", "repos", "dashboard"] as const)
-    : (["overview", "workspace", "members", "activity", "repos"] as const);
+    ? (["overview", "workspace", "members", "activity", "repos", "dashboard", "calendar"] as const)
+    : (["overview", "workspace", "members", "activity", "repos", "calendar"] as const);
 
   return (
     <div className="space-y-4">
@@ -239,7 +240,7 @@ function ProjectDetail() {
             <TypoHeading as="h1">{p.name}</TypoHeading>
             <TypoCaption as="p">{p.description}</TypoCaption>
             <div className="mt-3 flex flex-wrap gap-1">
-              {p.stack.map((s) => (
+              {p.stack.map((s: string) => (
                 <TagChip key={s}>{s}</TagChip>
               ))}
             </div>
@@ -483,6 +484,9 @@ function ProjectDetail() {
       {tab === "workspace" && <CollaborativeWorkspace projectId={projectId} />}
       {tab === "dashboard" && (
         <ProjectDashboard projectId={projectId} currentUserRole={currentUserRole} />
+      )}
+      {tab === "calendar" && (
+        <ProjectCalendar projectId={projectId} currentUserRole={currentUserRole} />
       )}
 
       <ApplyModal

@@ -354,39 +354,112 @@ export function EditProfileModal({
                 <div className="flex gap-2">
                   <Input
                     value={newSkillInput}
-                    onChange={(e) => setNewSkillInput(e.target.value)}
+                    onChange={(e) => {
+                      setNewSkillInput(e.target.value);
+                      if (validationErrors.skills) {
+                        setValidationErrors((prev) => {
+                          const next = { ...prev };
+                          delete next.skills;
+                          return next;
+                        });
+                      }
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         e.preventDefault();
-                        handleAddSkill();
+                        const trimmed = newSkillInput.trim();
+                        if (!trimmed) return;
+                        if (skills.some((s) => s.toLowerCase() === trimmed.toLowerCase())) {
+                          setValidationErrors((prev) => ({
+                            ...prev,
+                            skills: `"${trimmed}" is already in your skills list.`,
+                          }));
+                          return;
+                        }
+                        setSkills([...skills, trimmed]);
+                        setNewSkillInput("");
                       }
                     }}
                     placeholder="Add a skill (e.g. React, Python, Docker)"
                   />
-                  <Button type="button" onClick={handleAddSkill} variant="secondary">
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      const trimmed = newSkillInput.trim();
+                      if (!trimmed) return;
+                      if (skills.some((s) => s.toLowerCase() === trimmed.toLowerCase())) {
+                        setValidationErrors((prev) => ({
+                          ...prev,
+                          skills: `"${trimmed}" is already in your skills list.`,
+                        }));
+                        return;
+                      }
+                      setSkills([...skills, trimmed]);
+                      setNewSkillInput("");
+                    }}
+                    variant="secondary"
+                  >
                     <Plus className="h-4 w-4 mr-1" /> Add
                   </Button>
                 </div>
+                {validationErrors.skills && (
+                  <p className="text-xs text-destructive mt-1">{validationErrors.skills}</p>
+                )}
               </div>
 
-              <div className="flex flex-wrap gap-2 pt-2">
+              <div className="space-y-2 pt-2 max-h-60 overflow-y-auto">
                 {skills.length === 0 ? (
                   <p className="text-xs text-muted-foreground italic">No skills added yet.</p>
                 ) : (
-                  skills.map((skill) => (
-                    <span
-                      key={skill}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20"
+                  skills.map((skill, index) => (
+                    <div
+                      key={`${skill}-${index}`}
+                      className="flex items-center justify-between gap-2 p-2 rounded-md bg-muted/40 border border-border text-xs"
                     >
-                      {skill}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveSkill(skill)}
-                        className="hover:text-destructive transition-colors ml-0.5"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </span>
+                      <span className="font-medium text-foreground">{skill}</span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (index === 0) return;
+                            const next = [...skills];
+                            const temp = next[index - 1];
+                            next[index - 1] = next[index];
+                            next[index] = temp;
+                            setSkills(next);
+                          }}
+                          disabled={index === 0}
+                          className="p-1 rounded text-muted-foreground hover:bg-muted disabled:opacity-30 cursor-pointer"
+                          title="Move Up"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (index === skills.length - 1) return;
+                            const next = [...skills];
+                            const temp = next[index + 1];
+                            next[index + 1] = next[index];
+                            next[index] = temp;
+                            setSkills(next);
+                          }}
+                          disabled={index === skills.length - 1}
+                          className="p-1 rounded text-muted-foreground hover:bg-muted disabled:opacity-30 cursor-pointer"
+                          title="Move Down"
+                        >
+                          ↓
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSkill(skill)}
+                          className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer ml-1"
+                          title="Remove"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
                   ))
                 )}
               </div>

@@ -28,6 +28,7 @@ import {
   Award,
   FolderKanban,
   Users,
+  Heart,
 } from "lucide-react";
 import { ReportUserModal } from "@/components/shared/ReportUserModal";
 import { analyticsApi } from "@/api/modules/analytics";
@@ -36,6 +37,7 @@ import ExperienceCard from "@/components/profile/ExperienceCard";
 import { ProfileViewersList } from "@/components/profile/ProfileViewersList";
 import { PinnedProjectsCard } from "@/components/profile/PinnedProjectsCard";
 import { ProfileCompletionChecklist } from "@/components/profile/ProfileCompletionChecklist";
+import { PortfolioExportDialog } from "@/components/profile/PortfolioExportDialog";
 import { FollowButton } from "@/components/shared/FollowButton";
 import { useFollowStatus } from "@/hooks/useFollow";
 import { ActivityTimeline } from "@/components/profile/ActivityTimeline";
@@ -46,6 +48,8 @@ import { CollaborationStatusBadge } from "@/features/collaboration/components/Co
 import { CollaborationStatusPicker } from "@/features/collaboration/components/CollaborationStatusPicker";
 import { useCollaborationStatus } from "@/hooks/useCollaborationStatus";
 import { EditProfileModal } from "@/components/profile/EditProfileModal";
+import { ManageSkillsModal } from "@/components/profile/ManageSkillsModal";
+import DonationModal from "@/components/profile/DonationModal";
 
 export const Route = createFileRoute("/_app/profile/$username")({
   head: ({ params }) => ({
@@ -192,13 +196,17 @@ function ProfilePage() {
     isLoading: isStatusLoading,
   } = useCollaborationStatus();
 
+  const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
+
   // Profile banner & avatar state
   const [isBannerModalOpen, setIsBannerModalOpen] = useState(false);
   const [bannerUrl, setBannerUrl] = useState<string | null>(
     "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&h=400&fit=crop&auto=format",
   );
-  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(b?.avatar);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [isManageSkillsOpen, setIsManageSkillsOpen] = useState(false);
 
   // Profile summary state
   const [summary, setSummary] = useState<string | null>(null);
@@ -331,6 +339,12 @@ function ProfilePage() {
                 className="inline-flex items-center justify-center rounded-md border border-border bg-surface px-3 py-2 text-xs font-medium text-foreground hover:bg-muted transition-colors cursor-pointer"
               >
                 Copy Link
+              </button>
+              <button
+                onClick={() => setIsExportModalOpen(true)}
+                className="inline-flex items-center justify-center rounded-md border border-border bg-surface px-3 py-2 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                Export Profile
               </button>
             </div>
           </div>
@@ -492,6 +506,16 @@ function ProfilePage() {
             </div>
             <div className="flex items-center gap-2">
               {!me && <FollowButton userId={b.id} />}
+              {!me && (
+                <button
+                  type="button"
+                  onClick={() => setIsDonationModalOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-md bg-pink-600 px-3 py-2 text-[13px] font-semibold text-white transition-opacity hover:bg-pink-700"
+                >
+                  <Heart className="w-4 h-4" />
+                  Sponsor
+                </button>
+              )}
               {!me && (
                 <button
                   type="button"
@@ -669,7 +693,12 @@ function ProfilePage() {
 
       <div className="grid gap-4 lg:grid-cols-3 items-start">
         <div className="flex flex-col gap-4">
-          <SkillsCard skills={b.profileSkills ?? []} emptyAction={me ? profileAction : undefined} />
+          <SkillsCard
+            skills={b.profileSkills ?? []}
+            isOwnProfile={me}
+            onManageSkills={me ? () => setIsManageSkillsOpen(true) : undefined}
+            emptyAction={me ? profileAction : undefined}
+          />
           <ExperienceCard
             role={b.role}
             company={b.company}
@@ -860,6 +889,13 @@ function ProfilePage() {
       )}
 
       {me && (
+        <PortfolioExportDialog
+          open={isExportModalOpen}
+          onOpenChange={setIsExportModalOpen}
+        />
+      )}
+
+      {me && (
         <EditProfileModal
           open={isEditProfileOpen}
           onOpenChange={setIsEditProfileOpen}
@@ -886,6 +922,24 @@ function ProfilePage() {
               navigate({ to: "/profile/$username", params: { username: updated.username } });
             }
           }}
+        />
+      )}
+
+      {me && (
+        <ManageSkillsModal
+          open={isManageSkillsOpen}
+          onOpenChange={setIsManageSkillsOpen}
+          initialSkills={b.profileSkills}
+          username={b.handle}
+        />
+      )}
+
+      {!me && b.id && (
+        <DonationModal
+          isOpen={isDonationModalOpen}
+          onClose={() => setIsDonationModalOpen(false)}
+          recipientId={b.id}
+          recipientName={b.name}
         />
       )}
     </div>
