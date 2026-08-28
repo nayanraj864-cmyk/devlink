@@ -129,4 +129,3 @@ class PlatformSocialProofResponse(BaseModel):
     organizations: int = Field(..., description="Total partner organizations")
     hackathons: int = Field(..., description="Total hosted hackathons")
     last_updated: str = Field(..., description="ISO timestamp of stats calculation")
-

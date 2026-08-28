@@ -11,7 +11,6 @@ from app.models.user import User
 from app.models.project import Project, ProjectStage, ProjectVisibility
 from app.core.security import create_access_token
 
-
 # SQLite setup for tests
 engine = create_engine(
     "sqlite://",

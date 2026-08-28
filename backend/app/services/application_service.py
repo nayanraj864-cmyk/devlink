@@ -334,9 +334,9 @@ class ApplicationService:
         db_application: Application,
         shortlisted: bool,
     ) -> Application:
-        
+
         db_application.shortlisted = shortlisted
-        
+
         if shortlisted and db_application.status == ApplicationStatus.PENDING:
             ApplicationService._validate_status_transition(
                 db_application.status,

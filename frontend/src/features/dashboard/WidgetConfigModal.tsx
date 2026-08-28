@@ -12,8 +12,6 @@ import {
   LayoutGrid,
   Pin,
   PinOff,
-  Eye,
-  EyeOff,
   RotateCcw,
   Check,
 } from "lucide-react";
@@ -23,6 +21,7 @@ import {
   type WidgetDefinition,
 } from "./dashboardWidgets";
 import type { DashboardWidgetLayout } from "@/api/modules/dashboardLayout";
+import { TypoCard, TypoCaption } from "@/components/shared/Typography";
 
 export interface WidgetConfigModalProps {
   open: boolean;
@@ -77,12 +76,12 @@ export function WidgetConfigModal({
 
         <div className="flex items-center justify-between py-2 px-3 bg-muted/40 rounded-lg text-xs text-muted-foreground">
           <div className="flex gap-4">
-            <span>
+            <TypoCaption as="span">
               <strong className="text-foreground">{visibleCount}</strong> visible
-            </span>
-            <span>
+            </TypoCaption>
+            <TypoCaption as="span">
               <strong className="text-foreground">{pinnedCount}</strong> pinned
-            </span>
+            </TypoCaption>
           </div>
           <Button
             type="button"
@@ -113,17 +112,17 @@ export function WidgetConfigModal({
                     <Icon size={18} />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-semibold text-xs text-foreground flex items-center gap-2 truncate">
+                    <TypoCard as="p" className="font-semibold text-xs text-foreground flex items-center gap-2 truncate">
                       {definition.title}
                       {layout.pinned && (
-                        <span className="text-[10px] bg-primary/15 text-primary px-1.5 py-0.2 rounded font-bold">
+                        <TypoCaption as="span" className="text-[10px] bg-primary/15 text-primary px-1.5 py-0.2 rounded font-bold">
                           Pinned
-                        </span>
+                        </TypoCaption>
                       )}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground line-clamp-1">
+                    </TypoCard>
+                    <TypoCaption as="p" className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
                       {definition.description}
-                    </p>
+                    </TypoCaption>
                   </div>
                 </div>
 

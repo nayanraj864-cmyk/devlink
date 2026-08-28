@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useWithdrawApplication } from "@/hooks/useApplications";
+import { TypoHeading, TypoCaption } from "@/components/shared/Typography";
 
 import {
   Pagination,
@@ -81,10 +82,8 @@ export default function MyApplicationsPage() {
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-[22px] font-bold tracking-tight text-foreground">My Applications</h1>
-          <p className="mt-1 text-[13px] text-muted-foreground">
-            Track your status and withdraw pending applications.
-          </p>
+          <TypoHeading as="h1">My Applications</TypoHeading>
+          <TypoCaption as="p">Track your status and withdraw pending applications.</TypoCaption>
         </div>
 
         <div className="min-w-0 w-[280px] max-w-[280px]">

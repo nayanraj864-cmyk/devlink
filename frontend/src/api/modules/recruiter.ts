@@ -1,5 +1,12 @@
 import { api } from "../client";
-import type { ApplicationStatus } from "./projects";
+
+export type ApplicationStatus =
+  | "pending"
+  | "accepted"
+  | "rejected"
+  | "withdrawn"
+  | "shortlisted"
+  | "interviewing";
 
 export interface ApplicationResponse {
   id: string;
@@ -28,8 +35,14 @@ export const recruiterApi = {
       shortlisted,
     }),
 
-  scheduleInterview: (applicationId: string, data: { interview_scheduled_at: string; interview_link?: string }) =>
-    api.patch<ApplicationResponse>(`/api/applications/${applicationId}/schedule_interview`, data),
+  scheduleInterview: (
+    applicationId: string,
+    data: { interview_scheduled_at: string; interview_link?: string },
+  ) =>
+    api.patch<ApplicationResponse>(
+      `/api/applications/${applicationId}/schedule_interview`,
+      data,
+    ),
 
   addNotes: (applicationId: string, notes: string | null) =>
     api.patch<ApplicationResponse>(`/api/applications/${applicationId}/notes`, { notes }),

@@ -4,13 +4,11 @@ import {
   Plus,
   RotateCcw,
   Check,
-  Eye,
   GripVertical,
-  Pin,
-  Save,
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { TypoCard, TypoCaption } from "@/components/shared/Typography";
 
 export interface CustomizeDashboardToolbarProps {
   isCustomizing: boolean;
@@ -55,15 +53,15 @@ export function CustomizeDashboardToolbar({
           <GripVertical size={16} />
         </div>
         <div>
-          <p className="text-xs font-bold text-foreground flex items-center gap-2">
+          <TypoCard as="h3" className="text-xs font-bold text-foreground flex items-center gap-2">
             Customizing Dashboard Layout
-            <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-semibold">
+            <TypoCaption as="span" className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-semibold">
               Live Edit
-            </span>
-          </p>
-          <p className="text-[11px] text-muted-foreground">
+            </TypoCaption>
+          </TypoCard>
+          <TypoCaption as="p" className="text-[11px] text-muted-foreground mt-0.5">
             Drag widgets to reorder, pin to freeze at top, or hide widgets you don't need.
-          </p>
+          </TypoCaption>
         </div>
       </div>
 

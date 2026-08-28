@@ -6,6 +6,7 @@ import { Card, EmptyState } from "@/components/shared/primitives";
 import { CreateTeamDialog } from "./CreateTeamDialog";
 import { hackathonsService } from "@/services";
 import type { HackathonTeam } from "@/services";
+import { TypoCaption } from "@/components/shared/Typography";
 
 interface Props {
   hackathonId: string;
@@ -137,9 +138,9 @@ function TeamCard({
             )}
           </div>
           {team.description && (
-            <p className="mt-0.5 line-clamp-2 text-[12px] text-muted-foreground">
+            <TypoCaption as="p" className="mt-0.5 line-clamp-2 text-[12px] text-muted-foreground">
               {team.description}
-            </p>
+            </TypoCaption>
           )}
         </div>
       </div>

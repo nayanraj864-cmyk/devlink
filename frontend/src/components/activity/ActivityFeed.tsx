@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import type { BackendActivity } from "@/services";
 import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
+import { TypoCaption } from "@/components/shared/Typography";
 import {
   Activity as ActivityIcon,
   Archive,
@@ -71,9 +72,7 @@ export function ActivityItem({ activity }: { activity: BackendActivity }) {
           {actorName && <span> by {actorName}</span>}
         </p>
       </div>
-      <span className="whitespace-nowrap text-[11px] text-muted-foreground">
-        {getActivityTime(activity.created_at)}
-      </span>
+      <TypoCaption className="whitespace-nowrap text-[11px] text-muted-foreground">{getActivityTime(activity.created_at)}</TypoCaption>
     </li>
   );
 }

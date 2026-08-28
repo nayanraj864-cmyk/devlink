@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { WidgetDefinition } from "./dashboardWidgets";
+import { TypoCard, TypoCaption } from "@/components/shared/Typography";
 
 export interface DashboardWidgetWrapperProps {
   widget: WidgetDefinition;
@@ -88,13 +89,13 @@ export function DashboardWidgetWrapper({
             >
               <GripVertical size={16} />
             </span>
-            <span className="font-semibold text-xs text-foreground truncate">
+            <TypoCard as="span" className="font-semibold text-xs text-foreground truncate">
               {widget.title}
-            </span>
+            </TypoCard>
             {isPinned && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider bg-primary/15 text-primary border border-primary/25 px-1.5 py-0.5 rounded">
+              <TypoCaption as="span" className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider bg-primary/15 text-primary border border-primary/25 px-1.5 py-0.5 rounded">
                 <Pin size={9} className="fill-current" /> Pinned
-              </span>
+              </TypoCaption>
             )}
           </div>
 

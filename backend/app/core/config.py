@@ -189,6 +189,13 @@ class Settings(BaseSettings):
 
     ENABLE_RATE_LIMIT: bool = True
     DEFAULT_RATE_LIMIT: str = "100/minute"
+    RATE_LIMIT_ANONYMOUS: str = "60/minute"
+    RATE_LIMIT_AUTHENTICATED: str = "300/minute"
+    RATE_LIMIT_PREMIUM: str = "1000/minute"
+    RATE_LIMIT_ADMIN: str = "5000/minute"
+    RATE_LIMIT_BYPASS_IPS: str = "127.0.0.1,::1"
+    RATE_LIMIT_BYPASS_TOKEN: str = ""
+    RATE_LIMIT_ALGORITHM: str = "sliding_window"
     AUTH_RATE_LIMIT: str = "5/minute"
     LOGIN_RATE_LIMIT: str = "5/minute"
     REGISTER_RATE_LIMIT: str = "3/hour"
@@ -211,6 +218,11 @@ class Settings(BaseSettings):
     #: without Redis running gets working limits rather than a boot failure.
     RATE_LIMIT_STORAGE_URI: str = ""
 
+    @property
+    def rate_limit_bypass_ip_list(self) -> list[str]:
+        """`RATE_LIMIT_BYPASS_IPS` split into individual IP strings."""
+        return [ip.strip() for ip in self.RATE_LIMIT_BYPASS_IPS.split(",") if ip.strip()]
+
     #: Comma-separated CIDRs for the proxies in front of this application.
     #: `X-Forwarded-For` is honoured only for requests whose immediate peer
     #: falls inside one of these; from anywhere else the header is ignored,
@@ -227,7 +239,9 @@ class Settings(BaseSettings):
     @property
     def trusted_proxy_cidr_list(self) -> list[str]:
         """`TRUSTED_PROXY_CIDRS` split into entries."""
-        return [part.strip() for part in self.TRUSTED_PROXY_CIDRS.split(",") if part.strip()]
+        return [
+            part.strip() for part in self.TRUSTED_PROXY_CIDRS.split(",") if part.strip()
+        ]
 
     # ==========================================================
     # Request Tracing / Correlation IDs
@@ -267,7 +281,9 @@ class Settings(BaseSettings):
     REFERRER_POLICY_VALUE: str = "strict-origin-when-cross-origin"
 
     ENABLE_PERMISSIONS_POLICY: bool = True
-    PERMISSIONS_POLICY_VALUE: str = "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
+    PERMISSIONS_POLICY_VALUE: str = (
+        "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
+    )
 
     ENABLE_DNS_PREFETCH_CONTROL: bool = True
     ENABLE_CROSS_DOMAIN_POLICIES: bool = True

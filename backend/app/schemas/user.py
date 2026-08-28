@@ -328,9 +328,13 @@ class ProfileCompletionResponse(BaseModel):
 class DashboardWidgetLayout(BaseModel):
     id: str = Field(..., description="Unique widget identifier")
     order: int = Field(default=0, description="Display order index")
-    pinned: bool = Field(default=False, description="Whether the widget is pinned to top")
+    pinned: bool = Field(
+        default=False, description="Whether the widget is pinned to top"
+    )
     visible: bool = Field(default=True, description="Whether the widget is visible")
-    column: int = Field(default=1, description="Grid column index (1 for main, 2 for sidebar)")
+    column: int = Field(
+        default=1, description="Grid column index (1 for main, 2 for sidebar)"
+    )
 
 
 class DashboardLayoutUpdate(BaseModel):

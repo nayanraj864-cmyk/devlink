@@ -98,9 +98,11 @@ class MultiLevelCache:
     def delete_pattern(self, pattern: str) -> None:
         """Invalidate keys matching a pattern across all cache levels."""
         import fnmatch
-        
+
         # 1. Invalidate L1 cache
-        keys_to_delete = [k for k in self._l1_cache.keys() if fnmatch.fnmatch(k, pattern)]
+        keys_to_delete = [
+            k for k in self._l1_cache.keys() if fnmatch.fnmatch(k, pattern)
+        ]
         for k in keys_to_delete:
             del self._l1_cache[k]
 
@@ -111,6 +113,7 @@ class MultiLevelCache:
                     self._redis_client.delete(key)
             except Exception as e:
                 logger.error(f"Redis delete_pattern error for {pattern}: {e}")
+
 
 # Global singleton
 cache_manager = MultiLevelCache()
@@ -149,7 +152,9 @@ def cached(ttl: int = 300, key_prefix: str = ""):
             ]
 
             # Generate a consistent cache key
-            cache_key = f"{key_prefix}:{func.__name__}:{safe_args}:{safe_kwargs}:{user_id_key}"
+            cache_key = (
+                f"{key_prefix}:{func.__name__}:{safe_args}:{safe_kwargs}:{user_id_key}"
+            )
 
             # Try to get from cache
             cached_value = cache_manager.get(cache_key)

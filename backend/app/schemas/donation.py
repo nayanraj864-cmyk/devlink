@@ -3,10 +3,12 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
+
 class DonationCreate(BaseModel):
     recipient_id: uuid.UUID
     amount: int
     message: Optional[str] = None
+
 
 class DonationResponse(BaseModel):
     id: uuid.UUID
@@ -17,9 +19,10 @@ class DonationResponse(BaseModel):
     status: str
     message: Optional[str] = None
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
+
 
 class CheckoutSessionResponse(BaseModel):
     checkout_url: str

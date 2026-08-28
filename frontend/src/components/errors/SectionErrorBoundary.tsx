@@ -1,6 +1,7 @@
 import React, { Component, type ReactNode } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { reportLovableError } from "@/lib/lovable-error-reporting";
+import { TypoSection, TypoCaption } from "@/components/shared/Typography";
 
 export interface SectionErrorBoundaryProps {
   children: ReactNode;
@@ -73,13 +74,13 @@ export class SectionErrorBoundary extends Component<
             </div>
 
             <div className="min-w-0 flex-1">
-              <h3 className="text-[15px] font-semibold tracking-tight text-foreground">
+              <TypoSection as="h3" className="text-[15px] font-semibold tracking-tight text-foreground">
                 Something went wrong in {sectionName}
-              </h3>
-              <p className="mt-1 text-[13px] text-muted-foreground leading-relaxed">
+              </TypoSection>
+              <TypoCaption as="p" className="mt-1 text-[13px] text-muted-foreground leading-relaxed">
                 An unexpected error occurred while loading this part of the application. You can try
                 reloading this section or refreshing the page.
-              </p>
+              </TypoCaption>
 
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 <button

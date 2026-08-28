@@ -7,6 +7,7 @@ from app.services.donation_service import DonationService
 
 router = APIRouter(prefix="/donations", tags=["Donations"])
 
+
 @router.post("/checkout", response_model=CheckoutSessionResponse)
 def create_checkout_session(
     donation_data: DonationCreate,
@@ -22,11 +23,12 @@ def create_checkout_session(
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to create checkout session")
 
+
 @router.post("/webhook")
 async def stripe_webhook(request: Request, db: Session = Depends(get_database)):
     payload = await request.body()
     sig_header = request.headers.get("Stripe-Signature")
-    
+
     if not sig_header:
         raise HTTPException(status_code=400, detail="Missing Stripe signature header")
 

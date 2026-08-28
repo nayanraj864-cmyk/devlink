@@ -156,7 +156,9 @@ def test_bare_ipv6_is_not_split_on_its_colons(trusted):
     A naive ``split(":")[0]`` turns ``2001:db8::1`` into ``2001``. Only a
     single colon means "address with port".
     """
-    assert resolve_client_address(peer=PROXY, forwarded_for="2001:db8::1") == "2001:db8::1"
+    assert (
+        resolve_client_address(peer=PROXY, forwarded_for="2001:db8::1") == "2001:db8::1"
+    )
 
 
 # ---------------------------------------------------------------------------

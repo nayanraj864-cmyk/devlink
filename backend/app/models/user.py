@@ -492,7 +492,9 @@ class User(Base):
         try:
             if not hasattr(self, "user_skills") or not self.user_skills:
                 return []
-            return [us.skill.name for us in self.user_skills if getattr(us, "skill", None)]
+            return [
+                us.skill.name for us in self.user_skills if getattr(us, "skill", None)
+            ]
         except Exception:
             return []
 
@@ -502,5 +504,3 @@ class User(Base):
 
     def __repr__(self) -> str:
         return f"<User(username='{self.username}', email='{self.email}')>"
-
-

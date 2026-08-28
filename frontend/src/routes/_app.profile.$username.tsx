@@ -934,6 +934,7 @@ function ProfilePage() {
         />
       )}
 
+
       {!me && b.id && (
         <DonationModal
           isOpen={isDonationModalOpen}

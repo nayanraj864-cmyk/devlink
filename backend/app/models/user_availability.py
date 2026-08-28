@@ -6,10 +6,12 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base
 
+
 class UserAvailability(Base):
     """
     User availability scheduling table.
     """
+
     __tablename__ = "user_availability"
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -19,12 +21,12 @@ class UserAvailability(Base):
         unique=True,
         nullable=False,
     )
-    
+
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
-        unique=True, # One availability setting per user
+        unique=True,  # One availability setting per user
     )
 
     timezone: Mapped[str] = mapped_column(
@@ -36,7 +38,7 @@ class UserAvailability(Base):
     working_hours: Mapped[dict] = mapped_column(
         JSONB,
         nullable=False,
-        server_default='{}',
+        server_default="{}",
     )
 
     meeting_duration: Mapped[int] = mapped_column(
@@ -66,4 +68,6 @@ class UserAvailability(Base):
     user = relationship("User", back_populates="availability_setting")
 
     def __repr__(self) -> str:
-        return f"<UserAvailability(user_id='{self.user_id}', timezone='{self.timezone}')>"
+        return (
+            f"<UserAvailability(user_id='{self.user_id}', timezone='{self.timezone}')>"
+        )
