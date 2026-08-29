@@ -20,6 +20,10 @@ from fastapi import status
 from app.models.user import User
 from app.models.user_availability import UserAvailability
 
+# `CORSValidationMiddleware` rejects any request without an allowed `Origin`,
+# so an HTTP-level test has to send one or it never reaches the handler.
+ORIGIN = {"Origin": "http://localhost:5173"}
+
 
 def test_register_returns_200_and_an_empty_availability_list(client):
     """The happy path: a brand-new user has no `user_availability` row."""
@@ -32,6 +36,7 @@ def test_register_returns_200_and_an_empty_availability_list(client):
             "username": "availability_register",
             "password": "Vermilion-Kestrel97!",
         },
+        headers=ORIGIN,
     )
 
     assert response.status_code == status.HTTP_201_CREATED, response.text
@@ -51,6 +56,7 @@ def test_refresh_returns_200(client):
             "username": "availability_refresh",
             "password": "Vermilion-Kestrel97!",
         },
+        headers=ORIGIN,
     )
     login = client.post(
         "/api/auth/login",
@@ -58,11 +64,16 @@ def test_refresh_returns_200(client):
             "email": "availability-refresh@example.com",
             "password": "Vermilion-Kestrel97!",
         },
+        headers=ORIGIN,
     )
     refresh_token = login.json().get("refresh_token")
     assert refresh_token, login.text
 
-    response = client.post("/api/auth/refresh", json={"refresh_token": refresh_token})
+    response = client.post(
+        "/api/auth/refresh",
+        json={"refresh_token": refresh_token},
+        headers=ORIGIN,
+    )
 
     assert response.status_code == status.HTTP_200_OK, response.text
 
@@ -86,14 +97,14 @@ def test_availability_column_is_not_shadowed_by_the_relationship(db):
         {"day": "monday", "start_time": "09:00", "end_time": "17:00"}
     ]
     # The relationship, under its own name, and empty until a row exists.
-    assert user.availability_settings is None
+    assert user.availability_setting is None
 
-    user.availability_settings = UserAvailability(timezone="Europe/London")
+    user.availability_setting = UserAvailability(timezone="Europe/London")
     db.commit()
     db.refresh(user)
 
-    assert user.availability_settings.timezone == "Europe/London"
-    assert user.availability_settings.user.id == user.id
+    assert user.availability_setting.timezone == "Europe/London"
+    assert user.availability_setting.user.id == user.id
     # Still the column.
     assert user.availability[0]["day"] == "monday"
 

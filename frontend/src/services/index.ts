@@ -33,6 +33,8 @@ import type {
   Issue,
   IssueCreateInput,
   IssueUpdateInput,
+  PostComment,
+  PostEngagement,
   TechStackResponse,
 } from "@/api";
 import type { Hackathon, Flare, Message } from "@/mocks/seed";
@@ -297,6 +299,35 @@ export const flaresService = {
   remove: (id: string) =>
     withFallback<void>(async () => {
       await postsApi.remove(id);
+    }, undefined),
+
+  // The server is authoritative about the like count and about whether the
+  // caller has liked the post, and returns both. The offline fallbacks below
+  // only have to be shaped correctly; `changed: false` keeps the optimistic
+  // update in `useToggleLike` from being contradicted when there is no
+  // backend to ask.
+  like: (id: string) =>
+    withFallback<PostEngagement>(() => postsApi.like(id), {
+      post_id: id,
+      likes: 0,
+      comments: 0,
+      liked_by_me: true,
+      changed: false,
+    }),
+  unlike: (id: string) =>
+    withFallback<PostEngagement>(() => postsApi.unlike(id), {
+      post_id: id,
+      likes: 0,
+      comments: 0,
+      liked_by_me: false,
+      changed: false,
+    }),
+
+  comments: (id: string) => withFallback<PostComment[]>(() => postsApi.comments(id), []),
+  comment: (id: string, comment: string) => postsApi.comment(id, comment),
+  removeComment: (postId: string, commentId: string) =>
+    withFallback<void>(async () => {
+      await postsApi.removeComment(postId, commentId);
     }, undefined),
 };
 

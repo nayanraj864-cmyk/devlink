@@ -548,19 +548,9 @@ class AnalyticsService:
             or 0
         )
 
-        total_organizations = (
-            db.scalar(
-                select(func.count(Organization.id))
-            )
-            or 0
-        )
+        total_organizations = db.scalar(select(func.count(Organization.id))) or 0
 
-        total_hackathons = (
-            db.scalar(
-                select(func.count(Hackathon.id))
-            )
-            or 0
-        )
+        total_hackathons = db.scalar(select(func.count(Hackathon.id))) or 0
 
         return PlatformSocialProofResponse(
             developers=total_developers,
@@ -570,4 +560,3 @@ class AnalyticsService:
             hackathons=total_hackathons,
             last_updated=datetime.now(timezone.utc).isoformat(),
         )
-

@@ -22,16 +22,16 @@ import {
   Shield,
   Bell,
   Palette,
-  Lock,
   Download,
   Trash2,
   Camera,
   Upload,
   Save,
+  CreditCard,
+  Code2,
   ExternalLink,
   Calendar,
   HelpCircle,
-  Lock,
   Key,
   Plus,
   Copy,
@@ -51,25 +51,14 @@ import { usersService } from "@/services";
 import { TypoSection, TypoCaption, TypoHeading } from "@/components/shared/Typography";
 
 const tabs = [
-  { id: "account", label: "Account", icon: User },
-  { id: "appearance", label: "Appearance", icon: Palette },
-  { id: "notifications", label: "Notifications", icon: Bell },
-  { id: "availability", label: "Availability", icon: Calendar },
-  { id: "privacy", label: "Privacy", icon: Lock },
-  { id: "security", label: "Security", icon: Shield },
-  { id: "billing", label: "Billing", icon: CreditCard },
-  { id: "export", label: "Export Data", icon: Download },
-  { id: "profile", label: "Profile", icon: User, description: "Personal info and avatar" },
-  { id: "appearance", label: "Appearance", icon: Palette, description: "Theme and interface styling" },
-  { id: "notifications", label: "Notifications", icon: Bell, description: "Email and push notifications" },
-  { id: "security", label: "Security", icon: Shield, description: "Password, 2FA, and sessions" },
-  { id: "billing", label: "Billing", icon: CreditCard, description: "Plans, usage, and invoices" },
-  { id: "developer", label: "Developer Accounts", icon: Code2, description: "OAuth & API access tokens" },
-  { id: "account", label: "Account", icon: User, description: "Personal profile and public information" },
+  { id: "account", label: "Account / Profile", icon: User, description: "Personal profile and public information" },
   { id: "privacy", label: "Privacy", icon: Eye, description: "Visibility and data sharing settings" },
   { id: "notifications", label: "Notifications", icon: Bell, description: "Email and push notification preferences" },
   { id: "appearance", label: "Appearance", icon: Palette, description: "Theme and interface layout" },
-  { id: "security", label: "Security", icon: Lock, description: "Password, two-factor authentication, and sessions" },
+  { id: "availability", label: "Availability", icon: Calendar, description: "Working hours, timezone, and meeting links" },
+  { id: "security", label: "Security", icon: Shield, description: "Password, two-factor authentication, and sessions" },
+  { id: "billing", label: "Billing", icon: CreditCard, description: "Plans, usage, and invoices" },
+  { id: "developer", label: "Developer Accounts", icon: Code2, description: "OAuth & API access tokens" },
 ] as const;
 
 type TabId = (typeof tabs)[number]["id"];
@@ -97,6 +86,7 @@ export function UserSettingsPage() {
   const [bannerUrl, setBannerUrl] = useState<string | null>(
     "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&h=400&fit=crop&auto=format",
   );
+
 
   // Profile / Account state
   const [profileData, setProfileData] = useState({
@@ -137,6 +127,38 @@ export function UserSettingsPage() {
   const [themeMode, setThemeMode] = useState<"light" | "dark" | "system">("system");
   const [compactView, setCompactView] = useState(false);
 
+  // Developer Tokens state
+  const [apiTokens, setApiTokens] = useState([
+    {
+      id: "tok_1",
+      name: "CLI Token",
+      prefix: "dlk_live_9f82...",
+      created: "2 weeks ago",
+      lastUsed: "Yesterday",
+    },
+  ]);
+  const [newTokenName, setNewTokenName] = useState("");
+  const [isCreatingToken, setIsCreatingToken] = useState(false);
+
+  const handleCreateToken = () => {
+    if (!newTokenName.trim()) return;
+    const newToken = {
+      id: `tok_${Date.now()}`,
+      name: newTokenName.trim(),
+      prefix: `dlk_live_${Math.random().toString(36).substring(2, 6)}...`,
+      created: "Just now",
+      lastUsed: "Never",
+    };
+    setApiTokens((prev) => [newToken, ...prev]);
+    setNewTokenName("");
+    setIsCreatingToken(false);
+    toast.success("Personal access token generated");
+  };
+
+  const handleDeleteToken = (tokenId: string) => {
+    setApiTokens((prev) => prev.filter((t) => t.id !== tokenId));
+    toast.success("Token revoked");
+  };
   useEffect(() => {
     async function loadProfile() {
       setLoadingProfile(true);
@@ -196,26 +218,6 @@ export function UserSettingsPage() {
       last_name: lastName,
     }));
     setSaveStatus("unsaved");
-  };
-
-  const handleCreateToken = () => {
-    if (!newTokenName.trim()) return;
-    const newToken = {
-      id: `tok_${Date.now()}`,
-      name: newTokenName.trim(),
-      prefix: `dlk_live_${Math.random().toString(36).substring(2, 6)}...`,
-      created: "Just now",
-      lastUsed: "Never",
-    };
-    setApiTokens((prev) => [newToken, ...prev]);
-    setNewTokenName("");
-    setIsCreatingToken(false);
-    toast.success("Personal API token created successfully");
-  };
-
-  const handleDeleteToken = (id: string) => {
-    setApiTokens((prev) => prev.filter((t) => t.id !== id));
-    toast.success("API token revoked");
   };
 
   const inp =
@@ -589,20 +591,14 @@ export function UserSettingsPage() {
               </div>
             )}
 
+            {/* 6. AVAILABILITY TAB */}
             {tab === "availability" && (
-              <div className="p-6 space-y-6">
+              <div className="space-y-4">
                 <AvailabilitySettings />
               </div>
             )}
 
-            {tab === "security" && <SecurityDashboard userEmail="nancy@example.com" />}
-            {tab === "privacy" && (
-              <div className="p-6 space-y-6">
-                <div>
-                  <TypoHeading as="h2">Privacy Settings</TypoHeading>
-                  <TypoCaption as="p">Control who can view your profile and activities</TypoCaption>
-            {/* 4. SECURITY TAB */}
-            {/* 5. SECURITY TAB */}
+            {/* 6. SECURITY TAB */}
             {tab === "security" && (
               <div className="space-y-4">
                 <div className="border-b border-border pb-3">
@@ -631,6 +627,79 @@ export function UserSettingsPage() {
                     Delete Account
                   </Button>
                 </div>
+              </div>
+            )}
+
+            {/* 7. BILLING TAB */}
+            {tab === "billing" && (
+              <div className="space-y-4">
+                <BillingDashboard />
+              </div>
+            )}
+
+            {/* 8. DEVELOPER TAB */}
+            {tab === "developer" && (
+              <div className="space-y-6">
+                <div className="border-b border-border pb-3">
+                  <TypoHeading as="h2">Developer Accounts & API Access</TypoHeading>
+                  <TypoCaption as="p">Manage API credentials and connected developer accounts</TypoCaption>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <TypoSection as="h3">Personal Access Tokens</TypoSection>
+                      <TypoCaption as="p">Tokens used to authenticate with the DevLink CLI and API</TypoCaption>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => setIsCreatingToken(true)}
+                      className="gap-1.5"
+                    >
+                      <Plus size={14} /> Generate Token
+                    </Button>
+                  </div>
+
+                  {isCreatingToken && (
+                    <div className="rounded-lg border border-border bg-muted/40 p-3 space-y-3">
+                      <Label htmlFor="tokenName" className="text-xs font-medium">Token Name</Label>
+                      <input
+                        id="tokenName"
+                        value={newTokenName}
+                        onChange={(e) => setNewTokenName(e.target.value)}
+                        placeholder="e.g. CI/CD Runner"
+                        className={inp}
+                      />
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" size="sm" onClick={() => setIsCreatingToken(false)}>Cancel</Button>
+                        <Button size="sm" onClick={handleCreateToken}>Create</Button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="divide-y divide-border rounded-lg border border-border bg-card">
+                    {apiTokens.map((token) => (
+                      <div key={token.id} className="flex items-center justify-between p-3.5">
+                        <div className="space-y-0.5">
+                          <p className="text-xs font-medium text-foreground">{token.name}</p>
+                          <p className="font-mono text-[11px] text-muted-foreground">{token.prefix}</p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteToken(token.id)}
+                          className="h-8 text-xs text-destructive hover:text-destructive"
+                        >
+                          Revoke
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <Separator />
+
+                <ConnectedAccountsCard />
               </div>
             )}
           </Card>
@@ -664,3 +733,6 @@ export function UserSettingsPage() {
     </div>
   );
 }
+
+export const SettingsPage = UserSettingsPage;
+export default UserSettingsPage;

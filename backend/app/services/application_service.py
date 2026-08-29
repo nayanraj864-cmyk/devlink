@@ -76,18 +76,6 @@ class ApplicationService:
         flare_id: uuid.UUID,
         application: ApplicationCreate,
     ) -> Application:
-        existing_application = db.scalar(
-            select(Application).where(
-                Application.applicant_id == applicant_id,
-                Application.project_id == project_id,
-            )
-        )
-
-        if existing_application:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="You have already applied to this project.",
-            )
         db_application = Application(
             applicant_id=applicant_id,
             project_id=project_id,
@@ -106,7 +94,7 @@ class ApplicationService:
             db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="You have already applied to this project.",
+                detail="You have already applied to this project with this status.",
             )
         db.refresh(db_application)
         return db_application
@@ -334,9 +322,9 @@ class ApplicationService:
         db_application: Application,
         shortlisted: bool,
     ) -> Application:
-        
+
         db_application.shortlisted = shortlisted
-        
+
         if shortlisted and db_application.status == ApplicationStatus.PENDING:
             ApplicationService._validate_status_transition(
                 db_application.status,

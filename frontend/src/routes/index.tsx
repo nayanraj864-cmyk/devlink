@@ -58,6 +58,7 @@ import {
 import { cn } from "@/lib/utils";
 import { TypoSection, TypoCaption, TypoCard, TypoHeading } from "@/components/shared/Typography";
 import { SocialProofSection } from "@/components/landing/SocialProofSection";
+import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
 
 
 export const Route = createFileRoute("/")({
@@ -495,6 +496,9 @@ function Landing() {
 
       {/* ===== SOCIAL PROOF / PLATFORM GROWTH SECTION (#761) ===== */}
       <SocialProofSection />
+
+      {/* ===== TESTIMONIALS SECTION (#762) ===== */}
+      <TestimonialsSection />
 
       <section id="features" className="border-b border-border">
         <div className="mx-auto grid max-w-6xl gap-4 px-4 py-16 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">

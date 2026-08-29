@@ -41,7 +41,8 @@ class Application(Base):
         UniqueConstraint(
             "applicant_id",
             "project_id",
-            name="uq_applicant_project",
+            "status",
+            name="uq_applicant_project_status",
         ),
     )
     # ==========================================================

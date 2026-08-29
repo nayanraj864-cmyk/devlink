@@ -16,7 +16,8 @@ import { DashboardWidgetWrapper } from "@/features/dashboard/DashboardWidgetWrap
 import { CustomizeDashboardToolbar } from "@/features/dashboard/CustomizeDashboardToolbar";
 import { WidgetConfigModal } from "@/features/dashboard/WidgetConfigModal";
 import { dashboardLayoutApi, type DashboardWidgetLayout } from "@/api/modules/dashboardLayout";
-import { Pin, EyeOff, LayoutGrid } from "lucide-react";
+import { Pin, LayoutGrid } from "lucide-react";
+import { TypoCaption, TypoCard, TypoSection } from "@/components/shared/Typography";
 
 export const Route = createFileRoute("/_app/dashboard")({
   head: () => ({
@@ -71,7 +72,7 @@ function Dashboard() {
       await dashboardLayoutApi.updateLayout(updated);
       return updated;
     },
-    onSuccess: (saved) => {
+    onSuccess: () => {
       toast.success("Dashboard layout saved!");
       queryClient.invalidateQueries({ queryKey: ["dashboard-layout"] });
       setIsCustomizing(false);
@@ -104,8 +105,6 @@ function Dashboard() {
 
   // Derived sections
   const { pinnedWidgets, mainWidgets, sidebarWidgets, hiddenCount } = useMemo(() => {
-    const layoutMap = new Map(layouts.map((l) => [l.id, l]));
-
     const pinned: Array<{ def: WidgetDefinition; layout: DashboardWidgetLayout }> = [];
     const main: Array<{ def: WidgetDefinition; layout: DashboardWidgetLayout }> = [];
     const sidebar: Array<{ def: WidgetDefinition; layout: DashboardWidgetLayout }> = [];
@@ -260,25 +259,17 @@ function Dashboard() {
       {/* Stats Row */}
       <StatsRow />
 
- feat/organization-roles-987-v2
-      {/* Main Grid Grouping (2-column layout on desktop) */}
-      <div className="grid gap-6 lg:grid-cols-12 items-start">
-        {/* Left/Main Column - 9 cols */}
-        <div className="lg:col-span-9 flex flex-col gap-6">
-          <div className="grid gap-6 md:grid-cols-2">
-            <CurrentProjects />
-            <AISuggestions />
-
       {/* PINNED WIDGETS SECTION */}
       {pinnedWidgets.length > 0 && (
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary">
-            <Pin size={13} className="fill-current" />
-            Pinned Widgets
- main
+        <section aria-label="Pinned Widgets" className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <Pin size={13} className="text-primary fill-current shrink-0" />
+            <TypoSection as="h2" className="text-xs sm:text-sm font-bold uppercase tracking-wider text-primary">
+              Pinned Widgets
+            </TypoSection>
           </div>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {pinnedWidgets.map(({ def, layout }, index) => (
+            {pinnedWidgets.map(({ def }, index) => (
               <DashboardWidgetWrapper
                 key={def.id}
                 widget={def}
@@ -299,7 +290,7 @@ function Dashboard() {
               />
             ))}
           </div>
-        </div>
+        </section>
       )}
 
       {/* MAIN & SIDEBAR GRID */}
@@ -311,14 +302,16 @@ function Dashboard() {
           {mainWidgets.length === 0 && !isCustomizing ? (
             <div className="p-8 text-center rounded-2xl border border-dashed border-border bg-card">
               <LayoutGrid className="mx-auto h-8 w-8 text-muted-foreground/50 mb-2" />
-              <p className="text-sm font-semibold text-foreground">Main section widgets hidden</p>
-              <p className="text-xs text-muted-foreground mt-1">
+              <TypoCard as="h3" className="text-sm font-semibold text-foreground">
+                Main section widgets hidden
+              </TypoCard>
+              <TypoCaption as="p" className="mt-1">
                 Customize your dashboard to restore or reorder widgets.
-              </p>
+              </TypoCaption>
             </div>
           ) : (
             <div className="grid gap-6 md:grid-cols-2">
-              {mainWidgets.map(({ def, layout }, index) => (
+              {mainWidgets.map(({ def }, index) => (
                 <DashboardWidgetWrapper
                   key={def.id}
                   widget={def}
@@ -344,8 +337,8 @@ function Dashboard() {
 
         {/* Sidebar Column - 3 cols */}
         {sidebarWidgets.length > 0 && (
-          <div className="lg:col-span-3 flex flex-col gap-6">
-            {sidebarWidgets.map(({ def, layout }, index) => (
+          <aside aria-label="Dashboard Sidebar" className="lg:col-span-3 flex flex-col gap-6">
+            {sidebarWidgets.map(({ def }, index) => (
               <DashboardWidgetWrapper
                 key={def.id}
                 widget={def}
@@ -365,7 +358,7 @@ function Dashboard() {
                 isDragOver={dragOverWidgetId === def.id}
               />
             ))}
-          </div>
+          </aside>
         )}
       </div>
 

@@ -410,6 +410,13 @@ from app.middleware.request_logging import RequestLoggingMiddleware
 app.add_middleware(RequestLoggingMiddleware)
 
 # ------------------------------------------------------------------
+# CORS Validation (must run before CORSMiddleware)
+# ------------------------------------------------------------------
+from app.middleware.cors_validation import CORSValidationMiddleware
+
+app.add_middleware(CORSValidationMiddleware)
+
+# ------------------------------------------------------------------
 # CORS
 # ------------------------------------------------------------------
 
@@ -503,7 +510,10 @@ from app.routers import (
 # Router inclusions
 app.include_router(skill_matrix.router, prefix="/api", tags=["Skill Matrix"])
 from app.routers import availability
-app.include_router(availability.router, prefix="/api/availability", tags=["Availability"])
+
+app.include_router(
+    availability.router, prefix="/api/availability", tags=["Availability"]
+)
 
 from app.routers import github
 
@@ -515,8 +525,12 @@ app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 from app.routers import mfa
 
 app.include_router(mfa.router, prefix="/api")
-app.include_router(global_announcements.router, prefix="/api", tags=["Global Announcements"])
-app.include_router(feature_announcements.router, prefix="/api", tags=["Feature Announcement Center"])
+app.include_router(
+    global_announcements.router, prefix="/api", tags=["Global Announcements"]
+)
+app.include_router(
+    feature_announcements.router, prefix="/api", tags=["Feature Announcement Center"]
+)
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(blocks.router, prefix="/api/blocks", tags=["User Blocks"])
 from app.routers import testimonials
@@ -548,6 +562,7 @@ app.include_router(
     project_time_logs.router, prefix="/api", tags=["Project Time Tracking"]
 )
 from app.routers import project_calendar
+
 app.include_router(project_calendar.router, prefix="/api", tags=["Project Calendar"])
 from app.routers import calendar as calendar_router
 
@@ -665,6 +680,7 @@ app.include_router(
 app.include_router(posts.router, prefix="/api/posts", tags=["Posts"])
 
 from app.routers import donations
+
 app.include_router(donations.router, prefix="/api")
 
 from app.routers import project_templates
@@ -696,7 +712,10 @@ from app.routers import reputation
 app.include_router(reputation.router, prefix="/api", tags=["User Reputation System"])
 
 from app.routers import email_templates
-app.include_router(email_templates.router, prefix="/api", tags=["Email Notification Templates"])
+
+app.include_router(
+    email_templates.router, prefix="/api", tags=["Email Notification Templates"]
+)
 
 from app.routers import developer_insights
 

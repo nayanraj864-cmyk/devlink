@@ -103,7 +103,6 @@ def get_social_proof(
     return AnalyticsService.get_social_proof(db=db)
 
 
-
 @router.get(
     "/community/stats",
     response_model=CommunityStatsResponse,

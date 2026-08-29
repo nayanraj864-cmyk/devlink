@@ -10,7 +10,6 @@ from app.main import app
 from app.models.user import User
 from app.core.security import create_access_token
 
-
 # SQLite setup for tests
 engine = create_engine(
     "sqlite://",

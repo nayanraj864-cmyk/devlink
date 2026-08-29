@@ -118,12 +118,11 @@ class UserBase(BaseModel):
     is_active: bool = True
     is_verified: bool = False
     privacy_settings: PrivacySettings | None = Field(default_factory=PrivacySettings)
-    availability: list[AvailabilitySlot] = Field(default_factory=list)
-    collaboration_status: CollaborationStatus | None = CollaborationStatus.AVAILABLE
+    availability: list[AvailabilitySlot] | None = Field(default_factory=list)
 
     @field_validator("availability", mode="before")
     @classmethod
-    def _no_slots_is_an_empty_list(cls, value: object) -> object:
+    def set_availability(cls, v):
         """Read a NULL `users.availability` as "no slots", not as a failure.
 
         The column is nullable with a Python-side `default=list`, so it is only
@@ -132,7 +131,9 @@ class UserBase(BaseModel):
         `default_factory` does not cover that -- it applies when the attribute
         is absent, not when it is present and None.
         """
-        return [] if value is None else value
+        return v or []
+
+    collaboration_status: CollaborationStatus | None = CollaborationStatus.AVAILABLE
 
 
 # ==========================================================
@@ -342,9 +343,13 @@ class ProfileCompletionResponse(BaseModel):
 class DashboardWidgetLayout(BaseModel):
     id: str = Field(..., description="Unique widget identifier")
     order: int = Field(default=0, description="Display order index")
-    pinned: bool = Field(default=False, description="Whether the widget is pinned to top")
+    pinned: bool = Field(
+        default=False, description="Whether the widget is pinned to top"
+    )
     visible: bool = Field(default=True, description="Whether the widget is visible")
-    column: int = Field(default=1, description="Grid column index (1 for main, 2 for sidebar)")
+    column: int = Field(
+        default=1, description="Grid column index (1 for main, 2 for sidebar)"
+    )
 
 
 class DashboardLayoutUpdate(BaseModel):

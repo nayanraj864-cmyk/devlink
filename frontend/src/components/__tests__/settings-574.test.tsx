@@ -44,7 +44,7 @@ describe("Build User Settings Page (#574)", () => {
     render(<UserSettingsPage />);
 
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("User Settings");
-    expect(screen.getByRole("button", { name: /account/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^account/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /privacy/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /notifications/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /appearance/i })).toBeInTheDocument();

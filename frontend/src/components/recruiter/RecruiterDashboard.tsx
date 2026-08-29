@@ -13,7 +13,7 @@ export function RecruiterDashboard() {
 
   const { data: projects } = useQuery({
     queryKey: ["my-projects"],
-    queryFn: () => projectsApi.listMyProjects(),
+    queryFn: () => projectsApi.myProjects(),
   });
 
   const { data: applications, isLoading } = useQuery({

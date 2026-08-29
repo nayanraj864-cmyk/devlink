@@ -11,7 +11,6 @@ from app.models.user import User
 from app.models.skill import Skill
 from app.core.security import create_access_token
 
-
 # SQLite setup for tests
 engine = create_engine(
     "sqlite://",
@@ -58,9 +57,18 @@ def test_search_skills_autocomplete():
     db = TestingSessionLocal()
 
     # Pre-seed skills
-    s1 = Skill(name="TypeScript", slug="typescript", normalized_name="typescript", category="Languages")
-    s2 = Skill(name="Python", slug="python", normalized_name="python", category="Languages")
-    s3 = Skill(name="React", slug="react", normalized_name="react", category="Frameworks")
+    s1 = Skill(
+        name="TypeScript",
+        slug="typescript",
+        normalized_name="typescript",
+        category="Languages",
+    )
+    s2 = Skill(
+        name="Python", slug="python", normalized_name="python", category="Languages"
+    )
+    s3 = Skill(
+        name="React", slug="react", normalized_name="react", category="Frameworks"
+    )
     db.add_all([s1, s2, s3])
     db.commit()
 

@@ -15,7 +15,6 @@ from app.models.project_member import ProjectMember
 from app.models.organization import Organization, OrganizationType
 from app.models.hackathon import Hackathon, HackathonStatus
 
-
 # SQLite setup for tests
 engine = create_engine(
     "sqlite://",

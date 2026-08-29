@@ -138,7 +138,11 @@ class UserService:
                 db_user.privacy_settings = current_settings
 
         # Username update validation
-        if "username" in data and data["username"] and data["username"] != db_user.username:
+        if (
+            "username" in data
+            and data["username"]
+            and data["username"] != db_user.username
+        ):
             new_username = data.pop("username").strip()
             existing_user = UserService.get_by_username(db, new_username)
             if existing_user and existing_user.id != db_user.id:
@@ -155,7 +159,9 @@ class UserService:
                 from app.models.skill import Skill
                 from app.models.user_skill import UserSkill
 
-                db.query(UserSkill).filter(UserSkill.user_id == db_user.id).delete(synchronize_session=False)
+                db.query(UserSkill).filter(UserSkill.user_id == db_user.id).delete(
+                    synchronize_session=False
+                )
 
                 for skill_name in new_skills:
                     s_name = str(skill_name).strip()
@@ -164,9 +170,15 @@ class UserService:
                     norm_name = s_name.lower()
                     slug = norm_name.replace(" ", "-")
 
-                    skill_obj = db.query(Skill).filter(Skill.normalized_name == norm_name).first()
+                    skill_obj = (
+                        db.query(Skill)
+                        .filter(Skill.normalized_name == norm_name)
+                        .first()
+                    )
                     if not skill_obj:
-                        skill_obj = Skill(name=s_name, normalized_name=norm_name, slug=slug)
+                        skill_obj = Skill(
+                            name=s_name, normalized_name=norm_name, slug=slug
+                        )
                         db.add(skill_obj)
                         db.flush()
 

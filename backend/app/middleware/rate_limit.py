@@ -187,3 +187,36 @@ RECOMMENDATION_LIMIT = (
     if (not is_testing or force_rate_limits)
     else "1000000/minute"
 )
+
+# User Tier Rate Limits (#1061)
+ANONYMOUS_LIMIT = (
+    settings.RATE_LIMIT_ANONYMOUS
+    if (not is_testing or force_rate_limits)
+    else "1000000/minute"
+)
+AUTHENTICATED_LIMIT = (
+    settings.RATE_LIMIT_AUTHENTICATED
+    if (not is_testing or force_rate_limits)
+    else "1000000/minute"
+)
+PREMIUM_LIMIT = (
+    settings.RATE_LIMIT_PREMIUM
+    if (not is_testing or force_rate_limits)
+    else "1000000/minute"
+)
+ADMIN_LIMIT = (
+    settings.RATE_LIMIT_ADMIN
+    if (not is_testing or force_rate_limits)
+    else "1000000/minute"
+)
+
+from app.core.rate_limiter import (
+    RateLimitResult,
+    RateLimitTier,
+    TierRateLimitMiddleware,
+    TierRateLimiter,
+    parse_rate_limit_string,
+    rate_limit_tier,
+    tier_rate_limiter,
+)
+

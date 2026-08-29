@@ -1,4 +1,4 @@
-import api from '../client';
+import { api } from "../client";
 
 export interface DonationCreate {
   recipient_id: string;
@@ -12,7 +12,6 @@ export interface CheckoutSessionResponse {
 
 export const DonationsApi = {
   createCheckoutSession: async (data: DonationCreate): Promise<CheckoutSessionResponse> => {
-    const response = await api.post<CheckoutSessionResponse>('/donations/checkout', data);
-    return response.data;
-  }
+    return api.post<CheckoutSessionResponse>("/api/donations/checkout", data);
+  },
 };

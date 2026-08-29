@@ -40,6 +40,12 @@ import { getMyApplications } from "@/lib/api";
 import { useWithdrawApplication } from "@/hooks/useApplications";
 import { ApplyModal } from "@/features/projects/components/ApplyModal";
 
+import {
+  ProjectMediaGallery,
+  type ProjectMediaItem,
+} from "@/components/project/ProjectMediaGallery";
+import { ProjectMediaUploader } from "@/components/project/ProjectMediaUploader";
+
 export const Route = createFileRoute("/_app/projects/$projectId")({
   loader: async ({ params }) => {
     const project = await projectsService.get(params.projectId).catch(() => null);
@@ -139,6 +145,49 @@ function ProjectDetail() {
   const hasInvitePermission = can("project:invite", {
     ownerId: p?.ownerId,
   });
+
+  // Media Gallery & Showcase state
+  const [isMediaUploaderOpen, setIsMediaUploaderOpen] = useState(false);
+  const [coverImage, setCoverImage] = useState(
+    "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200&auto=format&fit=crop&q=80",
+  );
+  const [videoDemoUrl, setVideoDemoUrl] = useState("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+  const [screenshots, setScreenshots] = useState<ProjectMediaItem[]>([
+    {
+      id: "demo-screen-1",
+      url: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&auto=format&fit=crop&q=80",
+      type: "image",
+      title: "Interactive Dashboard View",
+      caption: "Real-time metrics and collaboration dashboard",
+      order: 0,
+    },
+    {
+      id: "demo-screen-2",
+      url: "https://images.unsplash.com/photo-1618401471353-b98afee0b2eb?w=800&auto=format&fit=crop&q=80",
+      type: "image",
+      title: "Code Analytics & Pull Requests",
+      caption: "Automated git metrics and contribution insights",
+      order: 1,
+    },
+    {
+      id: "demo-screen-3",
+      url: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop&q=80",
+      type: "image",
+      title: "Settings & Team Permissions",
+      caption: "Granular RBAC and project environment controls",
+      order: 2,
+    },
+  ]);
+
+  const handleSaveMedia = (data: {
+    coverImage: string;
+    screenshots: ProjectMediaItem[];
+    videoDemoUrl: string;
+  }) => {
+    setCoverImage(data.coverImage);
+    setScreenshots(data.screenshots);
+    setVideoDemoUrl(data.videoDemoUrl);
+  };
 
   const toggleTag = (tagName: string) => {
     setSelectedTags((prev) =>
@@ -340,15 +389,24 @@ function ProjectDetail() {
 
       {tab === "overview" && (
         <div className="grid gap-4 lg:grid-cols-3">
-          <Card className="p-4 lg:col-span-2">
-            <p className="text-[13px] font-semibold text-foreground">About</p>
-            <Markdown content={p.description} className="mt-2 text-muted-foreground" />
-            <p className="mt-4 text-[13px] font-semibold text-foreground">Progress</p>
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
-              <div className="h-full bg-primary" style={{ width: `${p.progress}%` }} />
-            </div>
-            <TypoCaption as="p">{p.progress}% complete</TypoCaption>
-          </Card>
+          <div className="space-y-4 lg:col-span-2">
+            <ProjectMediaGallery
+              coverImage={coverImage}
+              screenshots={screenshots}
+              videoDemoUrl={videoDemoUrl}
+              isOwner={isOwner}
+              onManageMedia={() => setIsMediaUploaderOpen(true)}
+            />
+            <Card className="p-4">
+              <p className="text-[13px] font-semibold text-foreground">About</p>
+              <Markdown content={p.description} className="mt-2 text-muted-foreground" />
+              <p className="mt-4 text-[13px] font-semibold text-foreground">Progress</p>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                <div className="h-full bg-primary" style={{ width: `${p.progress}%` }} />
+              </div>
+              <TypoCaption as="p">{p.progress}% complete</TypoCaption>
+            </Card>
+          </div>
           <Card className="p-4">
             <p className="text-[13px] font-semibold text-foreground">Owner</p>
             <TypoCaption as="p">{p.owner}</TypoCaption>
@@ -493,6 +551,15 @@ function ProjectDetail() {
         isOpen={isApplyModalOpen}
         onClose={() => setIsApplyModalOpen(false)}
         projectId={projectId}
+      />
+
+      <ProjectMediaUploader
+        isOpen={isMediaUploaderOpen}
+        onClose={() => setIsMediaUploaderOpen(false)}
+        initialCoverImage={coverImage}
+        initialScreenshots={screenshots}
+        initialVideoDemoUrl={videoDemoUrl}
+        onSave={handleSaveMedia}
       />
 
       {p && (

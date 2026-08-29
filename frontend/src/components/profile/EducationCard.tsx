@@ -1,10 +1,11 @@
 import { Card, EmptyState } from "@/components/shared/primitives";
 import { GraduationCap } from "lucide-react";
+import { TypoCaption } from "@/components/shared/Typography";
 
 export interface EducationEntry {
   school: string;
-  degree?: string | null;
-  years?: string | null;
+  degree?: string;
+  years?: string;
 }
 
 export interface EducationCardProps {
@@ -12,6 +13,8 @@ export interface EducationCardProps {
 }
 
 export function EducationCard({ education = [] }: EducationCardProps) {
+  const hasContent = education.length > 0;
+
   return (
     <Card className="p-5">
       <div className="flex items-center gap-2">
@@ -24,7 +27,7 @@ export function EducationCard({ education = [] }: EducationCardProps) {
         </div>
       </div>
 
-      {education.length === 0 ? (
+      {!hasContent ? (
         <EmptyState
           icon={GraduationCap}
           title="Add your learning journey"
@@ -39,17 +42,16 @@ export function EducationCard({ education = [] }: EducationCardProps) {
               className="rounded-lg border border-border/70 bg-background/70 p-3"
             >
               <p className="text-sm font-semibold text-foreground">{entry.school}</p>
- feat/organization-roles-987-v2
-              {entry.degree ? <TypoCaption as="p">{entry.degree}</TypoCaption> : null}
-              {entry.years ? <TypoCaption as="p">{entry.years}</TypoCaption> : null}
-
               {entry.degree ? (
-                <p className="mt-1 text-sm text-muted-foreground">{entry.degree}</p>
+                <TypoCaption as="p" className="mt-1 text-sm text-muted-foreground">
+                  {entry.degree}
+                </TypoCaption>
               ) : null}
               {entry.years ? (
-                <p className="mt-1 text-xs text-muted-foreground">{entry.years}</p>
+                <TypoCaption as="p" className="mt-1 text-xs text-muted-foreground">
+                  {entry.years}
+                </TypoCaption>
               ) : null}
- main
             </div>
           ))}
         </div>

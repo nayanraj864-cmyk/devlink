@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
 from enum import Enum
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     JSON,
@@ -262,6 +262,12 @@ class User(Base):
         nullable=False,
     )
 
+    hide_profile_views: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+
     privacy_settings: Mapped[dict | None] = mapped_column(
         JSON,
         nullable=True,
@@ -442,14 +448,12 @@ class User(Base):
         remote_side="User.id",
     )
 
-    # Named `availability_settings`, not `availability`. There is already an
-    # `availability` column above -- the weekly slots the resume parser fills in
-    # and `UserResponse.availability` serialises -- and a second class attribute
-    # of the same name simply replaces the first. The column became unreachable,
-    # every user serialised with this relationship instead, and for any user
-    # without a `user_availability` row that is None against a
-    # `list[AvailabilitySlot]` field, which is a 500 on register and refresh.
-    availability_settings: Mapped[Optional["UserAvailability"]] = relationship(
+    # Typed `Optional`: this is a scalar (`uselist=False`) relationship to a row
+    # that need not exist, and it is None for any user with no
+    # `user_availability` row. Distinct from the `availability` JSON column
+    # above -- the weekly slots `UserResponse.availability` serialises -- which
+    # a same-named class attribute here would silently replace.
+    availability_setting: Mapped["UserAvailability | None"] = relationship(
         "UserAvailability",
         back_populates="user",
         uselist=False,
@@ -499,11 +503,17 @@ class User(Base):
         return (now - last_seen).total_seconds() < threshold
 
     @property
+    def is_premium(self) -> bool:
+        return bool(getattr(self, "premium", False))
+
+    @property
     def skills(self) -> list[str]:
         try:
             if not hasattr(self, "user_skills") or not self.user_skills:
                 return []
-            return [us.skill.name for us in self.user_skills if getattr(us, "skill", None)]
+            return [
+                us.skill.name for us in self.user_skills if getattr(us, "skill", None)
+            ]
         except Exception:
             return []
 
@@ -513,5 +523,3 @@ class User(Base):
 
     def __repr__(self) -> str:
         return f"<User(username='{self.username}', email='{self.email}')>"
-
-

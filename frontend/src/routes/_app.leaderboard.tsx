@@ -6,7 +6,6 @@ import {
   Medal,
   Crown,
   Sparkles,
-  Zap,
   CheckCircle,
   GitPullRequest,
   FolderCheck,
@@ -14,28 +13,10 @@ import {
   MessageSquare,
   UserCheck,
   Flame,
-  Plus,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, EmptyState } from "@/components/shared/primitives";
 import { UserAvatar } from "@/components/user-avatar";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
 import { reputationApi, type LeaderboardEntry, type ReputationSummary } from "@/api";
 import { TypoSection, TypoCaption, TypoCard, TypoHeading } from "@/components/shared/Typography";
 
@@ -52,6 +33,14 @@ export const Route = createFileRoute("/_app/leaderboard")({
   component: LeaderboardPage,
 });
 
+// Reference table for the "How to Earn Reputation Points" card.
+//
+// This page used to carry a "Claim Reputation Points" dialog that posted
+// straight to `/api/reputation/award` with no target, which the API resolved
+// to the caller -- a self-service score, and only ever functional because that
+// endpoint had no authorization. Awarding is an administrative action now, so
+// the control is gone; what remains is the explanation of how points are
+// earned.
 const ACTION_POINTS_LABEL: Record<string, { label: string; points: number; icon: any }> = {
   merged_pull_request: { label: "Merged Pull Request", points: 50, icon: GitPullRequest },
   completed_project: { label: "Completed Project", points: 100, icon: FolderCheck },
@@ -66,10 +55,6 @@ function LeaderboardPage() {
   const [total, setTotal] = useState<number>(0);
   const [mySummary, setMySummary] = useState<ReputationSummary | null>(null);
   const [loading, setLoading] = useState(true);
-  const [awardModalOpen, setAwardModalOpen] = useState(false);
-  const [selectedAction, setSelectedAction] = useState("merged_pull_request");
-  const [actionDesc, setActionDesc] = useState("");
-  const [submitting, setSubmitting] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -97,24 +82,6 @@ function LeaderboardPage() {
     fetchData();
   }, []);
 
-  const handleAwardSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-    try {
-      await reputationApi.awardReputation({
-        action: selectedAction,
-        description: actionDesc || undefined,
-      });
-      toast.success("Reputation points awarded successfully!");
-      setAwardModalOpen(false);
-      setActionDesc("");
-      fetchData();
-    } catch (err) {
-      toast.error("Failed to log reputation points.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   const getRankBadge = (rank: number) => {
     if (rank === 1) {
@@ -156,9 +123,6 @@ function LeaderboardPage() {
           </TypoCaption>
         </div>
 
-        <Button onClick={() => setAwardModalOpen(true)} className="gap-2 shrink-0">
-          <Plus size={16} /> Claim Reputation Points
-        </Button>
       </div>
 
       {/* Grid: My Summary + Point System Breakdown */}
@@ -304,57 +268,6 @@ function LeaderboardPage() {
         )}
       </Card>
 
-      {/* Claim Reputation Modal */}
-      <Dialog open={awardModalOpen} onOpenChange={setAwardModalOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-amber-500" /> Claim Reputation Points
-            </DialogTitle>
-            <DialogDescription>
-              Select your completed community activity to log reputation points.
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleAwardSubmit} className="space-y-4 py-2">
-            <div className="space-y-2">
-              <label className="text-xs font-semibold text-foreground">Action Type</label>
-              <Select value={selectedAction} onValueChange={setSelectedAction}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select activity" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(ACTION_POINTS_LABEL).map(([key, item]) => (
-                    <SelectItem key={key} value={key}>
-                      {item.label} (+{item.points} pts)
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-semibold text-foreground">
-                Description / Reference (Optional)
-              </label>
-              <Input
-                placeholder="e.g., Merged PR #868 in DevLink repo"
-                value={actionDesc}
-                onChange={(e) => setActionDesc(e.target.value)}
-              />
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="outline" onClick={() => setAwardModalOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={submitting}>
-                {submitting ? "Claiming..." : "Award Points"}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

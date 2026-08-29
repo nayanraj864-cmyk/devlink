@@ -28,11 +28,20 @@ import {
   Award,
   FolderKanban,
   Users,
+  Globe,
+  Briefcase,
+  GraduationCap,
+  FolderGit2,
+  ExternalLink,
 } from "lucide-react";
 import { ReportUserModal } from "@/components/shared/ReportUserModal";
 import { analyticsApi } from "@/api/modules/analytics";
 import SkillsCard from "@/components/profile/SkillsCard";
 import ExperienceCard from "@/components/profile/ExperienceCard";
+import EducationCard from "@/components/profile/EducationCard";
+import CertificationsCard from "@/components/profile/CertificationsCard";
+import FeaturedRepositoriesCard from "@/components/profile/FeaturedRepositoriesCard";
+import PortfolioShowcaseCard from "@/components/profile/PortfolioShowcaseCard";
 import { ProfileViewersList } from "@/components/profile/ProfileViewersList";
 import { PinnedProjectsCard } from "@/components/profile/PinnedProjectsCard";
 import { ProfileCompletionChecklist } from "@/components/profile/ProfileCompletionChecklist";
@@ -49,7 +58,6 @@ import { useCollaborationStatus } from "@/hooks/useCollaborationStatus";
 import { EditProfileModal } from "@/components/profile/EditProfileModal";
 import { ManageSkillsModal } from "@/components/profile/ManageSkillsModal";
 import DonationModal from "@/components/profile/DonationModal";
-import { HeartIcon } from "@heroicons/react/24/outline";
 
 export const Route = createFileRoute("/_app/profile/$username")({
   head: ({ params }) => ({
@@ -57,7 +65,7 @@ export const Route = createFileRoute("/_app/profile/$username")({
       { title: `@${params.username} — DevLink` },
       {
         name: "description",
-        content: `${params.username}'s DevLink profile: skills, projects and activity.`,
+        content: `${params.username}'s DevLink profile: skills, projects, experience and professional background.`,
       },
     ],
   }),
@@ -71,46 +79,207 @@ type ProfileSkill = {
   yearsOfExperience?: number;
 };
 
-function ProfilePage() {
+type ProfileFormValues = {
+  headline: string;
+  bio: string;
+  location: string;
+  timezone: string;
+  website: string;
+  resumeUrl: string;
+  portfolioUrl: string;
+  githubUrl: string;
+  linkedinUrl: string;
+  role: string;
+  experienceLevel: string;
+  company: string;
+  profileSkills: ProfileSkill[];
+  techStack: string[];
+};
+
+export function ProfilePage() {
   const { username } = Route.useParams();
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const navigate = useNavigate();
-
-  // Fetch real user profile from backend
-  const {
-    data: fetchedUser,
-    isLoading: isUserLoading,
-    isError: isUserError,
-  } = useQuery({
-    queryKey: ["profile", username],
-    queryFn: async () => {
-      try {
-        const res = await usersApi.getByUsername(username);
-        return res;
-      } catch (err) {
-        // Fallback for currently logged in mock session user if offline
-        if (username === currentUser.handle) {
-          return {
-            id: currentUser.id,
-            username: currentUser.handle,
-            first_name: currentUser.name.split(" ")[0] || currentUser.name,
-            last_name: currentUser.name.split(" ").slice(1).join(" ") || "",
-            bio: "Product engineer. Ships fast, sleeps sometimes.",
-            role: "Full Stack Developer",
-            profile_image: currentUser.avatar,
-            premium: currentUser.premium,
-            verified: currentUser.verified,
-            skills: [],
-          };
-        }
-        throw err;
+  const me = username === currentUser.handle;
+  const b = me
+    ? {
+        ...builders[0],
+        name: currentUser.name,
+        handle: currentUser.handle,
+        avatar: currentUser.avatar,
+        bio: "Product engineer & open source maintainer. Ships fast, builds scalable systems.",
+        role: "Senior Full Stack Engineer",
+        headline: "Senior Full Stack Engineer • Open Source Enthusiast • React & FastAPI",
+        location: "San Francisco, CA",
+        website: "https://devlink.io/alex",
+        openToWork: true,
+        availability: "Immediate (Full-time & Remote)",
+        id: currentUser.id,
+        premium: currentUser.premium,
+        verified: currentUser.verified,
+        experienceEntries: [
+          {
+            title: "Senior Full Stack Engineer",
+            company: "DevLink Open Source",
+            experienceLevel: "Senior",
+            period: "2023 – Present",
+            description: "Leading frontend architecture, real-time collaboration engines, and developer tooling.",
+          },
+          {
+            title: "Software Engineer",
+            company: "Acme Cloud Corp",
+            experienceLevel: "Mid-level",
+            period: "2021 – 2023",
+            description: "Built distributed backend microservices in Go and Python.",
+          },
+        ],
+        education: [
+          {
+            school: "University of California, Berkeley",
+            degree: "B.S. in Computer Science",
+            years: "2017 – 2021",
+          },
+        ],
+        certifications: [
+          {
+            id: "cert_1",
+            name: "AWS Certified Solutions Architect – Professional",
+            issuer: "Amazon Web Services",
+            issueDate: "2024",
+            credentialId: "AWS-PSA-84920",
+            credentialUrl: "https://aws.amazon.com/verification",
+          },
+          {
+            id: "cert_2",
+            name: "CKA: Certified Kubernetes Administrator",
+            issuer: "Linux Foundation / CNCF",
+            issueDate: "2023",
+            credentialId: "LF-CKA-10294",
+            credentialUrl: "https://cncf.io",
+          },
+        ],
+        featuredRepositories: [
+          {
+            id: "repo_1",
+            name: "devlink-core",
+            description: "High-performance developer networking engine with real-time collaboration.",
+            language: "TypeScript",
+            stars: 1240,
+            forks: 312,
+            repoUrl: "https://github.com/devlink/devlink",
+            liveUrl: "https://devlink.io",
+            topics: ["react", "fastapi", "webrtc"],
+          },
+          {
+            id: "repo_2",
+            name: "fastapi-realtime-broker",
+            description: "Lightweight WebSocket state synchronization broker for modern web applications.",
+            language: "Python",
+            stars: 580,
+            forks: 94,
+            repoUrl: "https://github.com/devlink/broker",
+            topics: ["python", "asyncio", "redis"],
+          },
+        ],
+        portfolio: [
+          {
+            id: "port_1",
+            title: "DevLink Collaboration Platform",
+            description: "Full-scale developer hub empowering builders to match, create hackathon teams, and showcase repositories.",
+            link: "https://devlink.io",
+            role: "Lead Architect",
+            tags: ["Next.js", "FastAPI", "TailwindCSS"],
+            year: "2026",
+          },
+          {
+            id: "port_2",
+            title: "AI Match scoring engine",
+            description: "High-speed vector similarity matching algorithm for developer skill compatibility.",
+            link: "https://devlink.io/matching",
+            role: "Creator",
+            tags: ["PyTorch", "Redis", "TypeScript"],
+            year: "2025",
+          },
+        ],
       }
-    },
-  });
+    : builders.find((x) => x.handle === username);
 
-  const me =
-    username === currentUser.handle ||
-    Boolean(fetchedUser && fetchedUser.username === currentUser.handle);
+  if (!b) throw notFound();
+
+  // Ensure default networking collections if not populated on mock builder
+  const headline = (b as any).headline || `${b.role} • Building open source products`;
+  const openToWork = (b as any).openToWork ?? true;
+  const availability = (b as any).availability ?? "Immediate (Full-time & Remote)";
+  const website = (b as any).website || `https://${b.handle}.dev`;
+  const education = (b as any).education ?? [
+    {
+      school: "Stanford University",
+      degree: "B.S. in Computer Science",
+      years: "2018 – 2022",
+    },
+  ];
+  const certifications = (b as any).certifications ?? [
+    {
+      id: "cert_def_1",
+      name: "AWS Certified Developer – Associate",
+      issuer: "Amazon Web Services",
+      issueDate: "2024",
+      credentialId: "AWS-DVA-93821",
+      credentialUrl: "https://aws.amazon.com",
+    },
+  ];
+  const featuredRepositories = (b as any).featuredRepositories ?? [
+    {
+      id: "repo_def_1",
+      name: `${b.handle}-portfolio-starter`,
+      description: "Modern developer portfolio template with customizable widgets and theme tokens.",
+      language: "TypeScript",
+      stars: 342,
+      forks: 88,
+      repoUrl: "https://github.com",
+      topics: ["react", "vite", "tailwind"],
+    },
+    {
+      id: "repo_def_2",
+      name: "async-task-orchestrator",
+      description: "Distributed task orchestrator built with async workers and redis stream persistence.",
+      language: "Python",
+      stars: 195,
+      forks: 42,
+      repoUrl: "https://github.com",
+      topics: ["python", "redis"],
+    },
+  ];
+  const portfolioItems = (b as any).portfolio ?? [
+    {
+      id: "port_def_1",
+      title: "Cloud Scale Monitoring Dashboard",
+      description: "Real-time metrics aggregator and latency visualization suite for microservices.",
+      link: "https://github.com",
+      role: "Full Stack Engineer",
+      tags: ["React", "TypeScript", "TailwindCSS"],
+      year: "2025",
+    },
+  ];
+  const experienceEntries = (b as any).experienceEntries ?? [
+    {
+      title: b.role,
+      company: b.company || "Tech Innovators",
+      experienceLevel: b.experienceLevel || "Senior",
+      period: "2022 – Present",
+      description: "Designing reliable cloud infrastructures and scalable user interfaces.",
+    },
+  ];
+
+  const { data: followStatus } = useFollowStatus(b.id);
+  const followerCount = followStatus?.follower_count ?? b.followers ?? 0;
+  const profileProjects = projects.filter(
+    (project) =>
+      project.owner === b.name ||
+      project.owner === b.handle ||
+      project.owner_id === b.id ||
+      project.ownerId === b.id,
+  );
   const profileAction = (
     <Link
       to="/settings"
@@ -119,75 +288,6 @@ function ProfilePage() {
       Update profile
     </Link>
   );
-
-  const b = useMemo(() => {
-    if (!fetchedUser) return null;
-    const name =
-      fetchedUser.first_name && fetchedUser.last_name
-        ? `${fetchedUser.first_name} ${fetchedUser.last_name}`
-        : fetchedUser.first_name || fetchedUser.username || username;
-
-    const rawSkills: string[] = Array.isArray(fetchedUser.skills) ? fetchedUser.skills : [];
-    const profileSkills: ProfileSkill[] = rawSkills.map((skillName: string) => ({
-      name: skillName,
-      level: "Intermediate",
-      category: "Languages",
-    }));
-
-    return {
-      id: fetchedUser.id || "",
-      name,
-      firstName: fetchedUser.first_name || "",
-      lastName: fetchedUser.last_name || "",
-      handle: fetchedUser.username || username,
-      avatar: fetchedUser.profile_image || "",
-      headline: fetchedUser.headline ?? "",
-      bio: fetchedUser.bio ?? "",
-      location: fetchedUser.location ?? "",
-      country: fetchedUser.location ?? "",
-      website: fetchedUser.website ?? "",
-      githubUrl: fetchedUser.github_url ?? "",
-      linkedinUrl: fetchedUser.linkedinUrl ?? fetchedUser.linkedin_url ?? "",
-      twitterUrl: fetchedUser.twitterUrl ?? fetchedUser.twitter_url ?? "",
-      portfolioUrl: fetchedUser.portfolioUrl ?? fetchedUser.portfolio_url ?? "",
-      role: fetchedUser.role ?? "Developer",
-      company: fetchedUser.company ?? "",
-      experienceLevel: fetchedUser.experience_level ?? "Intermediate",
-      skills: rawSkills,
-      profileSkills,
-      experience: fetchedUser.experience ?? [],
-      education: fetchedUser.education ?? [],
-      badges: fetchedUser.badges ?? [],
-      online: Boolean(fetchedUser.online || fetchedUser.is_active),
-      premium: Boolean(fetchedUser.premium),
-      verified: Boolean(fetchedUser.is_verified || fetchedUser.verified),
-      collaborationStatus: fetchedUser.collaboration_status ?? "available",
-      followers: fetchedUser.followers_count ?? 0,
-      following: fetchedUser.following_count ?? 0,
-      contributions: fetchedUser.contributions_count ?? 0,
-    };
-  }, [fetchedUser, username]);
-
-  // Fetch real projects for this user
-  const {
-    data: userProjects = [],
-    isLoading: isProjectsLoading,
-  } = useQuery({
-    queryKey: ["user-projects", b?.id],
-    queryFn: async () => {
-      if (!b?.id) return [];
-      try {
-        const res = await projectsApi.byUser(b.id);
-        return Array.isArray(res) ? res : [];
-      } catch {
-        return [];
-      }
-    },
-    enabled: Boolean(b?.id),
-  });
-
-  const { data: followStatus } = useFollowStatus(b?.id || "");
-  const followerCount = followStatus?.follower_count ?? b?.followers ?? 0;
 
   // Live collaboration presence status
   const {
@@ -203,9 +303,8 @@ function ProfilePage() {
   const [bannerUrl, setBannerUrl] = useState<string | null>(
     "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&h=400&fit=crop&auto=format",
   );
-  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(b.avatar);
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(b?.avatar);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isManageSkillsOpen, setIsManageSkillsOpen] = useState(false);
 
@@ -312,22 +411,21 @@ function ProfilePage() {
   return (
     <div className="space-y-4">
       {me ? (
-        <Card className="p-6 bg-gradient-to-r from-primary-soft via-transparent to-transparent border-primary/20">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="space-y-1">
+        <Card className="p-4 sm:p-5 bg-gradient-to-r from-primary-soft via-transparent to-transparent border-primary/20">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="space-y-0.5">
               <TypoSection>
-                <span className="text-lg">🚀</span> Your Shareable Public Portfolio
+                <span className="text-base">🚀</span> Public Developer Showcase & Networking Profile
               </TypoSection>
               <TypoCaption as="p">
-                Showcase your projects, skills, and flares with beautiful custom themes, custom
-                layouts, and a direct contact form.
+                Share your verified skills, experience, certifications, and portfolio with recruiters and collaborators.
               </TypoCaption>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <Link
                 to="/portfolio/$username"
                 params={{ username: b.handle }}
-                className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
+                className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
               >
                 View Portfolio
               </Link>
@@ -337,7 +435,7 @@ function ProfilePage() {
                   navigator.clipboard.writeText(url);
                   toast.success("Portfolio link copied to clipboard!");
                 }}
-                className="inline-flex items-center justify-center rounded-md border border-border bg-surface px-3 py-2 text-xs font-medium text-foreground hover:bg-muted transition-colors cursor-pointer"
+                className="inline-flex items-center justify-center rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
               >
                 Copy Link
               </button>
@@ -351,15 +449,15 @@ function ProfilePage() {
           </div>
         </Card>
       ) : (
-        <Card className="p-4 bg-muted/40">
-          <div className="flex items-center justify-between gap-4">
+        <Card className="p-3.5 bg-muted/40">
+          <div className="flex items-center justify-between gap-3">
             <TypoCaption as="p">
-              Looking for a more polished, professional view of {b.name}'s work?
+              Looking for a polished portfolio showcase of {b.name}'s work?
             </TypoCaption>
             <Link
               to="/portfolio/$username"
               params={{ username: b.handle }}
-              className="inline-flex items-center justify-center rounded-md border border-primary text-primary hover:bg-primary-soft px-3 py-1.5 text-xs font-semibold transition-colors"
+              className="inline-flex items-center justify-center rounded-md border border-primary text-primary hover:bg-primary-soft px-3 py-1 text-xs font-semibold transition-colors shrink-0"
             >
               View Public Portfolio
             </Link>
@@ -375,7 +473,7 @@ function ProfilePage() {
             bio: b.bio,
             skills: b.skills,
             experience: b.experienceLevel || b.role || b.company,
-            education: b.headline,
+            education: headline,
             githubUrl: b.githubUrl,
             portfolioUrl: b.portfolioUrl,
             projects: userProjects.length,
@@ -383,7 +481,7 @@ function ProfilePage() {
         />
       )}
 
-      {/* Profile Card with Cover Banner & Avatar */}
+      {/* Main Profile Header Card */}
       <Card
         className={cn(
           "overflow-hidden p-0",
@@ -391,7 +489,7 @@ function ProfilePage() {
         )}
       >
         {/* Cover Banner */}
-        <div className="group relative h-44 w-full overflow-hidden bg-muted">
+        <div className="group relative h-36 sm:h-44 w-full overflow-hidden bg-muted">
           {bannerUrl ? (
             <img src={bannerUrl} alt="Profile banner" className="h-full w-full object-cover" />
           ) : (
@@ -409,16 +507,16 @@ function ProfilePage() {
             <button
               type="button"
               onClick={() => setIsBannerModalOpen(true)}
-              className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-md bg-black/60 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm transition-all hover:bg-black/80 cursor-pointer"
+              className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-md bg-black/60 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm transition-all hover:bg-black/80 cursor-pointer"
             >
-              <Camera size={14} />
-              Edit cover banner
+              <Camera size={13} />
+              Edit cover
             </button>
           )}
         </div>
 
-        <div className="p-6 pt-0">
-          <div className="flex flex-wrap items-start gap-5 -mt-12">
+        <div className="p-4 sm:p-5 pt-0">
+          <div className="flex flex-wrap items-start gap-4 -mt-10 sm:-mt-12">
             <UserAvatar
               src={currentAvatar}
               name={b.name}
@@ -431,30 +529,53 @@ function ProfilePage() {
                 setAvatarUrl(url);
                 toast.success("Avatar updated!");
               }}
-              className="ring-4 ring-card shadow-lg"
+              className="ring-4 ring-card shadow-md"
             />
-            <div className="min-w-0 flex-1 pt-12 sm:pt-4">
-              <TypoHeading as="h1">
-                {b.name}
-                {b.verified &&
-                  (b.premium ? (
-                    <span className="inline-flex items-center gap-1.5">
-                      <BadgeCheck
-                        className="text-amber-500 fill-amber-500/10 h-6 w-6 animate-pulse"
-                        aria-label="Premium Verified User"
-                      />
-                      <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 border border-amber-500/30 text-amber-500 px-2 py-0.5 rounded-full shadow-[0_0_8px_rgba(245,158,11,0.2)] animate-pulse">
-                        PRO VERIFIED
+            <div className="min-w-0 flex-1 pt-10 sm:pt-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <TypoHeading as="h1">
+                  {b.name}
+                  {b.verified &&
+                    (b.premium ? (
+                      <span className="inline-flex items-center gap-1.5 ml-1.5">
+                        <BadgeCheck
+                          className="text-amber-500 fill-amber-500/10 h-5 w-5 animate-pulse"
+                          aria-label="Premium Verified User"
+                        />
+                        <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 border border-amber-500/30 text-amber-500 px-2 py-0.5 rounded-full shadow-[0_0_8px_rgba(245,158,11,0.2)] animate-pulse">
+                          PRO VERIFIED
+                        </span>
                       </span>
-                    </span>
-                  ) : (
-                    <BadgeCheck className="text-primary h-6 w-6" aria-label="Verified User" />
-                  ))}
-              </TypoHeading>
+                    ) : (
+                      <BadgeCheck className="text-primary h-5 w-5 ml-1.5 inline" aria-label="Verified User" />
+                    ))}
+                </TypoHeading>
+
+                {/* Open to Work Badge */}
+                {openToWork && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Open to Work
+                  </span>
+                )}
+              </div>
+
+              {/* Professional Headline */}
+              <p className="mt-1 text-xs sm:text-sm font-medium text-foreground leading-snug">
+                {headline}
+              </p>
+
               <TypoCaption as="p">
                 @{b.handle} {b.role ? `· ${b.role}` : ""}
               </TypoCaption>
-              <div className="mt-2 flex items-center gap-2">
+
+              {/* Availability & Collaboration Status */}
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-md border border-border/50">
+                  <Briefcase size={11} className="text-primary" />
+                  <span>Availability: <strong>{availability}</strong></span>
+                </span>
+
                 {me ? (
                   <CollaborationStatusPicker
                     value={myStatus ?? "available"}
@@ -465,47 +586,49 @@ function ProfilePage() {
                   <CollaborationStatusBadge status={b.collaborationStatus} />
                 )}
               </div>
-              {b.bio && <p className="mt-2 text-[13px] text-foreground">{b.bio}</p>}
-              <div className="mt-3 flex flex-wrap items-center gap-3 text-[12px] text-muted-foreground">
+
+              <p className="mt-2 text-xs text-foreground leading-relaxed">{b.bio}</p>
+
+              {/* Networking details: location, website, metrics */}
+              <div className="mt-2.5 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                <span className="inline-flex items-center gap-1">
+                  <MapPin size={12} /> {b.location || b.country || "Remote"}
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <Calendar size={12} /> Joined 2024
+                </span>
+                {website && (
+                  <a
+                    href={website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-primary hover:underline"
+                  >
+                    <Globe size={12} /> {website.replace(/^https?:\/\//, "")}
+                  </a>
+                )}
+              </div>
+
+              <div className="mt-2.5 flex flex-wrap items-center gap-3 text-xs text-muted-foreground border-t border-border/50 pt-2">
                 <div>
-                  <span className="font-semibold">
-                    {followStatus?.follower_count ?? b.followers ?? 0}
-                  </span>{" "}
+                  <span className="font-semibold text-foreground">{followerCount}</span>{" "}
                   <TypoCaption>Followers</TypoCaption>
                 </div>
                 <div>
-                  <span className="font-semibold">
+                  <span className="font-semibold text-foreground">
                     {followStatus?.following_count ?? b.following ?? 0}
                   </span>{" "}
                   <TypoCaption>Following</TypoCaption>
                 </div>
                 <div>
-                  <span className="font-semibold">{b.contributions ?? 0}</span>{" "}
+                  <span className="font-semibold text-foreground">{b.contributions ?? 0}</span>{" "}
                   <TypoCaption>Contributions</TypoCaption>
                 </div>
               </div>
-              <div className="mt-3 flex flex-wrap items-center gap-3 text-[12px] text-muted-foreground">
-                {b.country && (
-                  <span className="inline-flex items-center gap-1">
-                    <MapPin size={12} /> {b.country}
-                  </span>
-                )}
-                <span className="inline-flex items-center gap-1">
-                  <Calendar size={12} /> Joined DevLink
-                </span>
-                {b.website && (
-                  <a
-                    href={b.website.startsWith("http") ? b.website : `https://${b.website}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 hover:text-primary transition-colors"
-                  >
-                    <LinkIcon size={12} /> {b.website.replace(/^https?:\/\//, "")}
-                  </a>
-                )}
-              </div>
             </div>
-            <div className="flex items-center gap-2">
+
+            {/* Header Action Buttons */}
+            <div className="flex items-center gap-2 shrink-0">
               {!me && <FollowButton userId={b.id} />}
               {!me && (
                 <button
@@ -513,7 +636,7 @@ function ProfilePage() {
                   onClick={() => setIsDonationModalOpen(true)}
                   className="inline-flex items-center gap-2 rounded-md bg-pink-600 px-3 py-2 text-[13px] font-semibold text-white transition-opacity hover:bg-pink-700"
                 >
-                  <HeartIcon className="w-4 h-4" />
+                  <Heart className="w-4 h-4" />
                   Sponsor
                 </button>
               )}
@@ -526,31 +649,20 @@ function ProfilePage() {
                       params: { conversationId: b.id },
                     })
                   }
-                  className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-[13px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90"
                 >
-                  <MessageCircle size={16} />
-                  Contact Developer
+                  <MessageCircle size={14} />
+                  Contact
                 </button>
               )}
               {me && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setIsEditProfileOpen(true)}
-                    className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-[13px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 cursor-pointer"
-                  >
-                    <Pencil size={16} />
-                    Edit Profile
-                  </button>
-
-                  <Link
-                    to="/profile-analytics"
-                    className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-[13px] font-medium text-foreground hover:bg-muted transition-colors"
-                  >
-                    <TrendingUp size={16} />
-                    Analytics
-                  </Link>
-                </>
+                <Link
+                  to="/profile-analytics"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+                >
+                  <TrendingUp size={14} />
+                  Analytics
+                </Link>
               )}
               <button
                 type="button"
@@ -559,9 +671,9 @@ function ProfilePage() {
                   navigator.clipboard.writeText(url);
                   toast.success("Profile link copied to clipboard!");
                 }}
-                className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-[13px] font-medium text-foreground hover:bg-muted transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
               >
-                <LinkIcon size={16} />
+                <LinkIcon size={13} />
                 Copy Link
               </button>
             </div>
@@ -570,11 +682,11 @@ function ProfilePage() {
       </Card>
 
       {/* AI Profile Summary Section */}
-      <Card className="p-4">
+      <Card className="p-3.5 sm:p-4">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-[13px] font-semibold text-foreground flex items-center gap-2">
-            <Sparkles size={14} className="text-primary" />
-            AI Profile Summary
+          <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+            <Sparkles size={13} className="text-primary" />
+            AI Professional Summary
           </p>
           {summary && !isEditing && (
             <div className="flex items-center gap-1">
@@ -582,14 +694,14 @@ function ProfilePage() {
                 onClick={handleEdit}
                 className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-muted-foreground hover:bg-muted/50 hover:text-foreground cursor-pointer"
               >
-                <Pencil size={12} /> Edit
+                <Pencil size={11} /> Edit
               </button>
               <button
                 onClick={() => summaryMutation.mutate()}
                 disabled={summaryMutation.isPending}
                 className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-muted-foreground hover:bg-muted/50 hover:text-foreground disabled:opacity-50 cursor-pointer"
               >
-                <RotateCw size={12} className={summaryMutation.isPending ? "animate-spin" : ""} />{" "}
+                <RotateCw size={11} className={summaryMutation.isPending ? "animate-spin" : ""} />{" "}
                 Regenerate
               </button>
             </div>
@@ -597,51 +709,44 @@ function ProfilePage() {
           {!summary && !summaryMutation.isPending && (
             <button
               onClick={() => summaryMutation.mutate()}
-              className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground hover:opacity-90 cursor-pointer"
+              className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground hover:opacity-90"
             >
-              <Sparkles size={12} /> Generate Summary
+              <Sparkles size={11} /> Generate Summary
             </button>
           )}
         </div>
 
         {summaryMutation.isPending && (
-          <div className="mt-3 space-y-2">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-5/6" />
-            <Skeleton className="h-4 w-2/3" />
+          <div className="mt-2 space-y-1.5">
+            <Skeleton className="h-3.5 w-full" />
+            <Skeleton className="h-3.5 w-5/6" />
+            <Skeleton className="h-3.5 w-2/3" />
           </div>
         )}
 
         {summary && !summaryMutation.isPending && (
-          <div className="mt-3">
+          <div className="mt-2 text-xs text-foreground leading-relaxed">
             {isEditing ? (
               <div className="space-y-2">
                 <textarea
                   value={editedSummary}
                   onChange={(e) => setEditedSummary(e.target.value)}
                   maxLength={500}
-                  rows={4}
-                  className="w-full rounded-md border border-border bg-surface px-3 py-2 text-[13px] text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none"
+                  rows={3}
+                  className="w-full rounded-md border border-border bg-surface px-2.5 py-1.5 text-xs text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 resize-none"
                 />
                 <div className="flex items-center justify-between">
-                  <p
-                    className={cn(
-                      "text-[11px]",
-                      editedSummary.length > 450 ? "text-orange-500" : "text-muted-foreground",
-                    )}
-                  >
-                    {editedSummary.length}/500 characters
-                  </p>
-                  <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-muted-foreground">{editedSummary.length}/500 chars</span>
+                  <div className="flex items-center gap-1.5">
                     <button
                       onClick={handleCancel}
-                      className="rounded-md px-3 py-1.5 text-[11px] text-muted-foreground hover:bg-muted/50 cursor-pointer"
+                      className="rounded-md px-2 py-1 text-[11px] text-muted-foreground hover:bg-muted"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleSave}
-                      className="rounded-md bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground hover:opacity-90 cursor-pointer"
+                      className="rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground"
                     >
                       Save
                     </button>
@@ -649,77 +754,53 @@ function ProfilePage() {
                 </div>
               </div>
             ) : (
-              <p className="text-[13px] text-foreground leading-relaxed">{summary}</p>
-            )}
-            {!me && (
-              <div className="mt-3 flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() =>
-                    navigate({
-                      to: "/messages/$conversationId",
-                      params: { conversationId: b.id },
-                    })
-                  }
-                  className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-[13px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 cursor-pointer"
-                >
-                  <MessageCircle size={16} />
-                  Contact Developer
-                </button>
-                <button
-                  onClick={() => setIsReportModalOpen(true)}
-                  className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-[13px] font-semibold text-destructive hover:bg-destructive/20 transition-colors flex items-center gap-1 cursor-pointer"
-                >
-                  <AlertTriangle size={14} /> Report
-                </button>
-              </div>
+              <p>{summary}</p>
             )}
           </div>
         )}
 
-        {!summary && !summaryMutation.isPending && !summaryMutation.isError && (
-          <TypoCaption as="p">
-            Generate an AI-powered professional summary based on your profile, skills, and activity.
+        {!summary && !summaryMutation.isPending && (
+          <TypoCaption as="p" className="mt-1">
+            Generate an AI-powered summary highlighting skills, experience, and background.
           </TypoCaption>
-        )}
-
-        {summaryMutation.isError && (
-          <p className="mt-2 text-[12px] text-destructive">
-            Failed to generate summary. Please try again.
-          </p>
         )}
       </Card>
 
-      {me && <ProfileViewersList className="mt-4" />}
+      {me && <ProfileViewersList />}
 
-      <div className="grid gap-4 lg:grid-cols-3 items-start">
-        <div className="flex flex-col gap-4">
-          <SkillsCard
-            skills={b.profileSkills ?? []}
-            isOwnProfile={me}
-            onManageSkills={me ? () => setIsManageSkillsOpen(true) : undefined}
-            emptyAction={me ? profileAction : undefined}
-          />
+      {/* Main 2-Column Professional Profile Grid */}
+      <div className="grid gap-4 lg:grid-cols-12 items-start">
+        {/* Left Column (5 cols) - Experience, Education, Certifications, Achievements */}
+        <div className="lg:col-span-5 flex flex-col gap-4">
+          {/* Experience Card */}
           <ExperienceCard
             role={b.role}
             company={b.company}
             experienceLevel={b.experienceLevel}
-            entries={b.experience}
+            entries={experienceEntries}
             emptyAction={me ? profileAction : undefined}
           />
 
-          <PinnedProjectsCard username={b.handle} isOwnProfile={me} />
+          {/* Education Card */}
+          <EducationCard education={education} />
 
+          {/* Certifications Card */}
+          <CertificationsCard certifications={certifications} />
+
+          {/* Achievements Card */}
           <Card className="p-4">
-            <p className="text-[13px] font-semibold text-foreground">Achievements</p>
+            <div className="flex items-center gap-2 mb-2.5">
+              <Award size={15} className="text-amber-500" />
+              <p className="text-xs font-semibold text-foreground">Achievements & Badges</p>
+            </div>
             {b.badges && b.badges.length > 0 ? (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {b.badges.map((badge: string) => (
+              <div className="flex flex-wrap gap-1.5">
+                {b.badges.map((badge) => (
                   <span
                     key={badge}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary"
+                    className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary"
                   >
-                    <span className="text-[14px]">🏅</span> {badge}
+                    <span>🏅</span> {badge}
                   </span>
                 ))}
               </div>
@@ -727,88 +808,65 @@ function ProfilePage() {
               <EmptyState
                 icon={Award}
                 title="Achievements await"
-                desc="Complete projects and contribute to the community to earn badges."
-                action={
-                  me ? (
-                    <Link to="/projects" className="inline-flex items-center rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90">
-                      Explore projects
-                    </Link>
-                  ) : undefined
-                }
-                className="py-8"
+                desc="Contribute to projects and flares to earn community badges."
+                className="py-4"
               />
             )}
           </Card>
-
-          {followerCount === 0 ? (
-            <Card className="p-4">
-              <p className="text-[13px] font-semibold text-foreground">Followers</p>
-              <EmptyState
-                icon={Users}
-                title="Build your network"
-                desc="Share your profile and collaborate with other builders to grow your audience."
-                action={
-                  me ? (
-                    <Link to="/builders" className="inline-flex items-center rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90">
-                      Find builders
-                    </Link>
-                  ) : undefined
-                }
-                className="py-8"
-              />
-            </Card>
-          ) : null}
         </div>
 
-        <div className="flex flex-col gap-4 lg:col-span-2">
-          {/* Projects Section */}
-          <Card className="p-5">
-            <div className="flex items-center justify-between pb-3 border-b border-border">
-              <div>
-                <TypoHeading as="h2" className="text-sm font-semibold text-foreground">
-                  Projects
-                </TypoHeading>
-                <TypoCaption as="p">
-                  {me ? "Projects you have published" : `Projects built by ${b.name}`}
-                </TypoCaption>
+        {/* Right Column (7 cols) - Skills, Featured Repos, Portfolio Showcase, Projects, Timeline */}
+        <div className="lg:col-span-7 flex flex-col gap-4">
+          {/* Skills Matrix Card */}
+          <SkillsCard
+            skills={
+              b.profileSkills && b.profileSkills.length > 0
+                ? b.profileSkills
+                : currentUser.profileSkills
+            }
+            emptyAction={me ? profileAction : undefined}
+          />
+
+          {/* Featured Repositories Card */}
+          <FeaturedRepositoriesCard repositories={featuredRepositories} />
+
+          {/* Portfolio Showcase Card */}
+          <PortfolioShowcaseCard items={portfolioItems} />
+
+          {/* Projects Card */}
+          <Card className="p-4">
+            <div className="flex items-center justify-between mb-2.5">
+              <div className="flex items-center gap-2">
+                <FolderKanban size={15} className="text-primary" />
+                <p className="text-xs font-semibold text-foreground">Active Projects</p>
               </div>
               {me && (
-                <Link
-                  to="/projects"
-                  className="inline-flex items-center gap-1 rounded-md bg-primary/10 hover:bg-primary/20 text-primary px-2.5 py-1 text-xs font-medium transition-colors"
-                >
-                  <Plus size={12} /> New Project
+                <Link to="/projects" search={{ create: true }} className="text-[11px] font-medium text-primary hover:underline">
+                  + Add Project
                 </Link>
               )}
             </div>
-
-            {isProjectsLoading ? (
-              <div className="mt-3 space-y-2">
-                <Skeleton className="h-12 w-full rounded-md" />
-                <Skeleton className="h-12 w-full rounded-md" />
-              </div>
-            ) : userProjects.length === 0 ? (
-              <div className="py-8 text-center">
-                <FolderOpen className="mx-auto h-8 w-8 text-muted-foreground/60 mb-2" />
-                <p className="text-sm font-medium text-foreground">No projects shared yet</p>
-                <TypoCaption as="p" className="mt-1">
-                  {me
-                    ? "Showcase your work by creating your first project."
-                    : `${b.name} hasn't published any public projects yet.`}
-                </TypoCaption>
-                {me && (
-                  <Link
-                    to="/projects"
-                    className="inline-flex items-center gap-2 mt-4 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
-                  >
-                    <Plus size={14} /> Create Project
-                  </Link>
-                )}
-              </div>
+            {profileProjects.length === 0 ? (
+              <EmptyState
+                icon={FolderKanban}
+                title="No projects listed"
+                desc="Projects showcase real-world development achievements."
+                action={
+                  me ? (
+                    <Link
+                      to="/projects"
+                      className="inline-flex items-center rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"
+                    >
+                      Create Project
+                    </Link>
+                  ) : undefined
+                }
+                className="py-6"
+              />
             ) : (
-              <ul className="mt-3 divide-y divide-border">
-                {userProjects.map((p: ExtendedProject) => (
-                  <li key={p.id} className="py-2.5">
+              <ul className="divide-y divide-border/60">
+                {profileProjects.slice(0, 4).map((p) => (
+                  <li key={p.id} className="py-2">
                     <Link
                       to="/projects/$projectId"
                       params={{ projectId: p.id }}
@@ -817,24 +875,16 @@ function ProfilePage() {
                           analyticsApi.trackClick("project", b.id, p.id).catch(() => {});
                         }
                       }}
-                      className="flex items-center gap-3 hover:bg-muted/50 p-2 rounded-lg transition-colors w-full text-left"
+                      className="flex items-center gap-3 hover:bg-muted/50 p-1.5 rounded-lg transition-colors w-full text-left"
                     >
-                      <div className="grid h-9 w-9 place-items-center rounded-lg bg-primary/10 text-primary font-bold text-sm shrink-0">
-                        {p.title ? p.title.charAt(0).toUpperCase() : "P"}
-                      </div>
+                      <span className="grid h-7 w-7 place-items-center rounded-md bg-muted text-base shrink-0">
+                        {p.icon || "🚀"}
+                      </span>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-[13px] font-semibold text-foreground hover:text-primary transition-colors">
-                          {p.title || (p as any).name}
+                        <p className="truncate text-xs font-semibold text-foreground hover:text-primary transition-colors">
+                          {p.name}
                         </p>
-                        <TypoCaption as="p" className="truncate">
-                          {p.tagline ||
-                            p.description ||
-                            (Array.isArray((p as any).tech_stack)
-                              ? (p as any).tech_stack.join(" · ")
-                              : Array.isArray((p as any).stack)
-                                ? (p as any).stack.join(" · ")
-                                : "")}
-                        </TypoCaption>
+                        <TypoCaption as="p">{p.stack.join(" · ")}</TypoCaption>
                       </div>
                     </Link>
                   </li>
@@ -843,6 +893,7 @@ function ProfilePage() {
             )}
           </Card>
 
+          {/* GitHub / Contribution Heatmap */}
           {(() => {
             const githubUrl = b.githubUrl;
             let githubUsername = undefined;
@@ -857,16 +908,25 @@ function ProfilePage() {
 
             if (githubUsername) {
               return (
-                <div className="mt-4">
+                <div>
                   <GitHubInsights username={githubUsername} />
                 </div>
               );
             }
-            return <ContributionHeatmap username={b.handle} className="mt-4" />;
+            return <ContributionHeatmap username={b.handle} />;
           })()}
+
+          {/* Activity Timeline */}
           <ActivityTimeline userId={b.id} emptyAction={me ? profileAction : undefined} />
+          {me && (
+            <ProfileViewersList
+              isPremium={currentUser?.premium ?? true}
+              className="mt-6"
+            />
+          )}
         </div>
       </div>
+
       {!me && (
         <ReportUserModal
           isOpen={isReportModalOpen}
@@ -893,6 +953,10 @@ function ProfilePage() {
         <PortfolioExportDialog
           open={isExportModalOpen}
           onOpenChange={setIsExportModalOpen}
+        />
+      )}
+
+      {me && (
         <EditProfileModal
           open={isEditProfileOpen}
           onOpenChange={setIsEditProfileOpen}
@@ -928,7 +992,10 @@ function ProfilePage() {
           onOpenChange={setIsManageSkillsOpen}
           initialSkills={b.profileSkills}
           username={b.handle}
-      
+        />
+      )}
+
+
       {!me && b.id && (
         <DonationModal
           isOpen={isDonationModalOpen}
@@ -940,3 +1007,5 @@ function ProfilePage() {
     </div>
   );
 }
+
+export default ProfilePage;

@@ -1,4 +1,4 @@
-﻿import uuid
+import uuid
 from typing import List
 
 from fastapi import APIRouter, Depends, status, Response
@@ -6,13 +6,17 @@ from sqlalchemy.orm import Session
 
 from app.dependencies import get_current_active_user, get_database
 from app.models.user import User
-from app.schemas.project_calendar_event import CalendarEventCreate, CalendarEventResponse
+from app.schemas.project_calendar_event import (
+    CalendarEventCreate,
+    CalendarEventResponse,
+)
 from app.services.project_calendar_service import ProjectCalendarService
 
 router = APIRouter(
     prefix="/projects/{project_id}/calendar-events",
     tags=["Project Calendar"],
 )
+
 
 @router.get(
     "",
@@ -25,6 +29,7 @@ def list_events(
 ):
     events = ProjectCalendarService.get_events(db, project_id=project_id)
     return events
+
 
 @router.post(
     "",
@@ -42,6 +47,7 @@ def create_event(
         db, project_id=project_id, event_in=event_in, actor=current_user
     )
     return event
+
 
 @router.delete(
     "/{event_id}",
