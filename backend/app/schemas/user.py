@@ -123,6 +123,14 @@ class UserBase(BaseModel):
     @field_validator("availability", mode="before")
     @classmethod
     def set_availability(cls, v):
+        """Read a NULL `users.availability` as "no slots", not as a failure.
+
+        The column is nullable with a Python-side `default=list`, so it is only
+        `[]` for rows this application inserted. Anything older, anything
+        inserted by a migration, and anything written by hand is NULL, and
+        `default_factory` does not cover that -- it applies when the attribute
+        is absent, not when it is present and None.
+        """
         return v or []
 
     collaboration_status: CollaborationStatus | None = CollaborationStatus.AVAILABLE

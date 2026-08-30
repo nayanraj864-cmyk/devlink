@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from enum import Enum
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     JSON,
@@ -19,6 +20,9 @@ from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base
+
+if TYPE_CHECKING:
+    from app.models.user_availability import UserAvailability
 
 
 class UserRole(str, Enum):
@@ -452,7 +456,12 @@ class User(Base):
         remote_side="User.id",
     )
 
-    availability_setting: Mapped["UserAvailability"] = relationship(
+    # Typed `Optional`: this is a scalar (`uselist=False`) relationship to a row
+    # that need not exist, and it is None for any user with no
+    # `user_availability` row. Distinct from the `availability` JSON column
+    # above -- the weekly slots `UserResponse.availability` serialises -- which
+    # a same-named class attribute here would silently replace.
+    availability_setting: Mapped["UserAvailability | None"] = relationship(
         "UserAvailability",
         back_populates="user",
         uselist=False,
