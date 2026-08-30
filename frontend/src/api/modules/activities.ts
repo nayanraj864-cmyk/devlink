@@ -42,6 +42,7 @@ export const activitiesApi = {
     target_id?: string;
     target_type?: string;
     activity_types?: ActivityType[];
+    following_only?: boolean;
   }) => {
     const params = new URLSearchParams();
     if (query?.limit) params.append("limit", query.limit.toString());
@@ -49,6 +50,7 @@ export const activitiesApi = {
     if (query?.actor_id) params.append("actor_id", query.actor_id);
     if (query?.target_id) params.append("target_id", query.target_id);
     if (query?.target_type) params.append("target_type", query.target_type);
+    if (query?.following_only) params.append("following_only", "true");
     if (query?.activity_types) {
       query.activity_types.forEach((type) => params.append("activity_types", type));
     }

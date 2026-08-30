@@ -23,6 +23,7 @@ import { Route as AppTemplatesRouteImport } from './routes/_app.templates'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppSearchRouteImport } from './routes/_app.search'
 import { Route as AppRepositoryQualityRouteImport } from './routes/_app.repository-quality'
+import { Route as AppRecruiterRouteImport } from './routes/_app.recruiter'
 import { Route as AppProjectsRouteImport } from './routes/_app.projects'
 import { Route as AppProfileAnalyticsRouteImport } from './routes/_app.profile-analytics'
 import { Route as AppOrganizationsRouteImport } from './routes/_app.organizations'
@@ -32,11 +33,13 @@ import { Route as AppLoadingStatesRouteImport } from './routes/_app.loading-stat
 import { Route as AppLeaderboardRouteImport } from './routes/_app.leaderboard'
 import { Route as AppInsightsRouteImport } from './routes/_app.insights'
 import { Route as AppHackathonsRouteImport } from './routes/_app.hackathons'
+import { Route as AppHackathonDashboardRouteImport } from './routes/_app.hackathon-dashboard'
 import { Route as AppGraphRouteImport } from './routes/_app.graph'
 import { Route as AppFlaresRouteImport } from './routes/_app.flares'
 import { Route as AppFeedRouteImport } from './routes/_app.feed'
 import { Route as AppDesignSystemRouteImport } from './routes/_app.design-system'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
+import { Route as AppCodeReviewRouteImport } from './routes/_app.code-review'
 import { Route as AppBuildersRouteImport } from './routes/_app.builders'
 import { Route as AppBookmarksRouteImport } from './routes/_app.bookmarks'
 import { Route as AppAnnouncementsRouteImport } from './routes/_app.announcements'
@@ -131,6 +134,11 @@ const AppRepositoryQualityRoute = AppRepositoryQualityRouteImport.update({
   path: '/repository-quality',
   getParentRoute: () => AppRoute,
 } as any)
+const AppRecruiterRoute = AppRecruiterRouteImport.update({
+  id: '/recruiter',
+  path: '/recruiter',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppProjectsRoute = AppProjectsRouteImport.update({
   id: '/projects',
   path: '/projects',
@@ -176,6 +184,11 @@ const AppHackathonsRoute = AppHackathonsRouteImport.update({
   path: '/hackathons',
   getParentRoute: () => AppRoute,
 } as any)
+const AppHackathonDashboardRoute = AppHackathonDashboardRouteImport.update({
+  id: '/hackathon-dashboard',
+  path: '/hackathon-dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppGraphRoute = AppGraphRouteImport.update({
   id: '/graph',
   path: '/graph',
@@ -199,6 +212,11 @@ const AppDesignSystemRoute = AppDesignSystemRouteImport.update({
 const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCodeReviewRoute = AppCodeReviewRouteImport.update({
+  id: '/code-review',
+  path: '/code-review',
   getParentRoute: () => AppRoute,
 } as any)
 const AppBuildersRoute = AppBuildersRouteImport.update({
@@ -343,11 +361,13 @@ export interface FileRoutesByFullPath {
   '/announcements': typeof AppAnnouncementsRoute
   '/bookmarks': typeof AppBookmarksRoute
   '/builders': typeof AppBuildersRouteWithChildren
+  '/code-review': typeof AppCodeReviewRoute
   '/dashboard': typeof AppDashboardRoute
   '/design-system': typeof AppDesignSystemRoute
   '/feed': typeof AppFeedRoute
   '/flares': typeof AppFlaresRoute
   '/graph': typeof AppGraphRoute
+  '/hackathon-dashboard': typeof AppHackathonDashboardRoute
   '/hackathons': typeof AppHackathonsRouteWithChildren
   '/insights': typeof AppInsightsRoute
   '/leaderboard': typeof AppLeaderboardRoute
@@ -357,6 +377,7 @@ export interface FileRoutesByFullPath {
   '/organizations': typeof AppOrganizationsRouteWithChildren
   '/profile-analytics': typeof AppProfileAnalyticsRoute
   '/projects': typeof AppProjectsRouteWithChildren
+  '/recruiter': typeof AppRecruiterRoute
   '/repository-quality': typeof AppRepositoryQualityRoute
   '/search': typeof AppSearchRoute
   '/settings': typeof AppSettingsRouteWithChildren
@@ -396,11 +417,13 @@ export interface FileRoutesByTo {
   '/announcements': typeof AppAnnouncementsRoute
   '/bookmarks': typeof AppBookmarksRoute
   '/builders': typeof AppBuildersRouteWithChildren
+  '/code-review': typeof AppCodeReviewRoute
   '/dashboard': typeof AppDashboardRoute
   '/design-system': typeof AppDesignSystemRoute
   '/feed': typeof AppFeedRoute
   '/flares': typeof AppFlaresRoute
   '/graph': typeof AppGraphRoute
+  '/hackathon-dashboard': typeof AppHackathonDashboardRoute
   '/hackathons': typeof AppHackathonsRouteWithChildren
   '/insights': typeof AppInsightsRoute
   '/leaderboard': typeof AppLeaderboardRoute
@@ -409,6 +432,7 @@ export interface FileRoutesByTo {
   '/notifications': typeof AppNotificationsRoute
   '/profile-analytics': typeof AppProfileAnalyticsRoute
   '/projects': typeof AppProjectsRouteWithChildren
+  '/recruiter': typeof AppRecruiterRoute
   '/repository-quality': typeof AppRepositoryQualityRoute
   '/search': typeof AppSearchRoute
   '/settings': typeof AppSettingsRouteWithChildren
@@ -450,11 +474,13 @@ export interface FileRoutesById {
   '/_app/announcements': typeof AppAnnouncementsRoute
   '/_app/bookmarks': typeof AppBookmarksRoute
   '/_app/builders': typeof AppBuildersRouteWithChildren
+  '/_app/code-review': typeof AppCodeReviewRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/design-system': typeof AppDesignSystemRoute
   '/_app/feed': typeof AppFeedRoute
   '/_app/flares': typeof AppFlaresRoute
   '/_app/graph': typeof AppGraphRoute
+  '/_app/hackathon-dashboard': typeof AppHackathonDashboardRoute
   '/_app/hackathons': typeof AppHackathonsRouteWithChildren
   '/_app/insights': typeof AppInsightsRoute
   '/_app/leaderboard': typeof AppLeaderboardRoute
@@ -464,6 +490,7 @@ export interface FileRoutesById {
   '/_app/organizations': typeof AppOrganizationsRouteWithChildren
   '/_app/profile-analytics': typeof AppProfileAnalyticsRoute
   '/_app/projects': typeof AppProjectsRouteWithChildren
+  '/_app/recruiter': typeof AppRecruiterRoute
   '/_app/repository-quality': typeof AppRepositoryQualityRoute
   '/_app/search': typeof AppSearchRoute
   '/_app/settings': typeof AppSettingsRouteWithChildren
@@ -505,11 +532,13 @@ export interface FileRouteTypes {
     | '/announcements'
     | '/bookmarks'
     | '/builders'
+    | '/code-review'
     | '/dashboard'
     | '/design-system'
     | '/feed'
     | '/flares'
     | '/graph'
+    | '/hackathon-dashboard'
     | '/hackathons'
     | '/insights'
     | '/leaderboard'
@@ -519,6 +548,7 @@ export interface FileRouteTypes {
     | '/organizations'
     | '/profile-analytics'
     | '/projects'
+    | '/recruiter'
     | '/repository-quality'
     | '/search'
     | '/settings'
@@ -558,11 +588,13 @@ export interface FileRouteTypes {
     | '/announcements'
     | '/bookmarks'
     | '/builders'
+    | '/code-review'
     | '/dashboard'
     | '/design-system'
     | '/feed'
     | '/flares'
     | '/graph'
+    | '/hackathon-dashboard'
     | '/hackathons'
     | '/insights'
     | '/leaderboard'
@@ -571,6 +603,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/profile-analytics'
     | '/projects'
+    | '/recruiter'
     | '/repository-quality'
     | '/search'
     | '/settings'
@@ -611,11 +644,13 @@ export interface FileRouteTypes {
     | '/_app/announcements'
     | '/_app/bookmarks'
     | '/_app/builders'
+    | '/_app/code-review'
     | '/_app/dashboard'
     | '/_app/design-system'
     | '/_app/feed'
     | '/_app/flares'
     | '/_app/graph'
+    | '/_app/hackathon-dashboard'
     | '/_app/hackathons'
     | '/_app/insights'
     | '/_app/leaderboard'
@@ -625,6 +660,7 @@ export interface FileRouteTypes {
     | '/_app/organizations'
     | '/_app/profile-analytics'
     | '/_app/projects'
+    | '/_app/recruiter'
     | '/_app/repository-quality'
     | '/_app/search'
     | '/_app/settings'
@@ -764,6 +800,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRepositoryQualityRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/recruiter': {
+      id: '/_app/recruiter'
+      path: '/recruiter'
+      fullPath: '/recruiter'
+      preLoaderRoute: typeof AppRecruiterRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/projects': {
       id: '/_app/projects'
       path: '/projects'
@@ -827,6 +870,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppHackathonsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/hackathon-dashboard': {
+      id: '/_app/hackathon-dashboard'
+      path: '/hackathon-dashboard'
+      fullPath: '/hackathon-dashboard'
+      preLoaderRoute: typeof AppHackathonDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/graph': {
       id: '/_app/graph'
       path: '/graph'
@@ -860,6 +910,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/code-review': {
+      id: '/_app/code-review'
+      path: '/code-review'
+      fullPath: '/code-review'
+      preLoaderRoute: typeof AppCodeReviewRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/builders': {
@@ -1154,11 +1211,13 @@ interface AppRouteChildren {
   AppAnnouncementsRoute: typeof AppAnnouncementsRoute
   AppBookmarksRoute: typeof AppBookmarksRoute
   AppBuildersRoute: typeof AppBuildersRouteWithChildren
+  AppCodeReviewRoute: typeof AppCodeReviewRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppDesignSystemRoute: typeof AppDesignSystemRoute
   AppFeedRoute: typeof AppFeedRoute
   AppFlaresRoute: typeof AppFlaresRoute
   AppGraphRoute: typeof AppGraphRoute
+  AppHackathonDashboardRoute: typeof AppHackathonDashboardRoute
   AppHackathonsRoute: typeof AppHackathonsRouteWithChildren
   AppInsightsRoute: typeof AppInsightsRoute
   AppLeaderboardRoute: typeof AppLeaderboardRoute
@@ -1168,6 +1227,7 @@ interface AppRouteChildren {
   AppOrganizationsRoute: typeof AppOrganizationsRouteWithChildren
   AppProfileAnalyticsRoute: typeof AppProfileAnalyticsRoute
   AppProjectsRoute: typeof AppProjectsRouteWithChildren
+  AppRecruiterRoute: typeof AppRecruiterRoute
   AppRepositoryQualityRoute: typeof AppRepositoryQualityRoute
   AppSearchRoute: typeof AppSearchRoute
   AppSettingsRoute: typeof AppSettingsRouteWithChildren
@@ -1181,11 +1241,13 @@ const AppRouteChildren: AppRouteChildren = {
   AppAnnouncementsRoute: AppAnnouncementsRoute,
   AppBookmarksRoute: AppBookmarksRoute,
   AppBuildersRoute: AppBuildersRouteWithChildren,
+  AppCodeReviewRoute: AppCodeReviewRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppDesignSystemRoute: AppDesignSystemRoute,
   AppFeedRoute: AppFeedRoute,
   AppFlaresRoute: AppFlaresRoute,
   AppGraphRoute: AppGraphRoute,
+  AppHackathonDashboardRoute: AppHackathonDashboardRoute,
   AppHackathonsRoute: AppHackathonsRouteWithChildren,
   AppInsightsRoute: AppInsightsRoute,
   AppLeaderboardRoute: AppLeaderboardRoute,
@@ -1195,6 +1257,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppOrganizationsRoute: AppOrganizationsRouteWithChildren,
   AppProfileAnalyticsRoute: AppProfileAnalyticsRoute,
   AppProjectsRoute: AppProjectsRouteWithChildren,
+  AppRecruiterRoute: AppRecruiterRoute,
   AppRepositoryQualityRoute: AppRepositoryQualityRoute,
   AppSearchRoute: AppSearchRoute,
   AppSettingsRoute: AppSettingsRouteWithChildren,

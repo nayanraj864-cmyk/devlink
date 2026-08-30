@@ -97,6 +97,7 @@ class ActivityService:
         target_id: uuid.UUID | None = None,
         target_type: str | None = None,
         activity_types: list[ActivityType] | None = None,
+        actor_ids: list[uuid.UUID] | None = None,
     ) -> list[Activity]:
         """
         Unified method to list activities with cursor-based pagination and filtering.
@@ -105,6 +106,8 @@ class ActivityService:
 
         if actor_id:
             stmt = stmt.where(Activity.actor_id == actor_id)
+        if actor_ids is not None:
+            stmt = stmt.where(Activity.actor_id.in_(actor_ids))
         if target_id:
             stmt = stmt.where(Activity.target_id == target_id)
         if target_type:

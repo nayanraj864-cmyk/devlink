@@ -54,6 +54,26 @@ def _ilike_pattern(q: str) -> str:
     return f"%{escaped}%"
 
 
+def escape_ilike_pattern(q: str) -> str:
+    """Escape SQL LIKE wildcards (% and _) in a search term for use in ILIKE patterns.
+
+    This prevents ReDoS and query performance issues caused by unescaped wildcards
+    in user-provided search input. The escaped term can then be wrapped with %
+    for use in ILIKE queries.
+
+    Example:
+        escaped = escape_ilike_pattern("100%")  # returns "100\\%"
+        pattern = f"%{escaped}%"  # safe to use in ILIKE
+    """
+    if not q:
+        return ""
+    return (
+        q.replace("\\", "\\\\")
+        .replace("%", "\\%")
+        .replace("_", "\\_")
+    )
+
+
 def _is_postgres(db: Session) -> bool:
     """Check if the active database dialect is PostgreSQL."""
     try:
@@ -102,7 +122,9 @@ def _apply_user_filters(
         query = query.filter(User.location.ilike(_ilike_pattern(location)))
 
     if experience and experience.strip():
-        query = query.filter(func.lower(User.experience_level) == experience.strip().lower())
+        query = query.filter(
+            func.lower(User.experience_level) == experience.strip().lower()
+        )
 
     if organization and organization.strip():
         query = query.filter(User.company.ilike(_ilike_pattern(organization)))
@@ -135,7 +157,9 @@ def _sort_users(users: List[User], sort: Optional[str]) -> List[User]:
     if key == "experience":
         return sorted(
             users,
-            key=lambda u: _EXPERIENCE_RANK.get((u.experience_level or "").strip().lower(), 0),
+            key=lambda u: _EXPERIENCE_RANK.get(
+                (u.experience_level or "").strip().lower(), 0
+            ),
             reverse=True,
         )
     if key == "recent":
@@ -264,6 +288,9 @@ def _score_skill(s: Skill, q: str) -> float:
     return score
 
 
+from sqlalchemy.orm import Session, selectinload
+
+
 def search_users(
     db: Session,
     q: str,
@@ -285,6 +312,9 @@ def search_users(
     Supports optional advanced filters (skills, location, experience level,
     open-to-work availability, organization/company, remote) and an
     alternate sort order (relevance, name, experience, recent).
+
+    Uses eager loading via `selectinload` on `user_skills.skill` to eliminate
+    unnecessary/N+1 database queries when serializing builder skills.
     """
     clean_q = _normalize_query(q)
     if not clean_q:
@@ -306,9 +336,13 @@ def search_users(
             + func.coalesce(User.headline, ""),
         )
         ts_query = func.websearch_to_tsquery("english", clean_q)
-        query = db.query(User).filter(
-            User.is_active.is_(True),
-            ts_vector.op("@@")(ts_query),
+        query = (
+            db.query(User)
+            .options(selectinload(User.user_skills).selectinload(UserSkill.skill))
+            .filter(
+                User.is_active.is_(True),
+                ts_vector.op("@@")(ts_query),
+            )
         )
         query = _apply_user_filters(
             query,
@@ -331,15 +365,19 @@ def search_users(
         )
     else:
         pattern = _ilike_pattern(q)
-        query = db.query(User).filter(
-            User.is_active.is_(True),
-            or_(
-                User.username.ilike(pattern),
-                User.first_name.ilike(pattern),
-                User.last_name.ilike(pattern),
-                User.role.ilike(pattern),
-                User.headline.ilike(pattern),
-            ),
+        query = (
+            db.query(User)
+            .options(selectinload(User.user_skills).selectinload(UserSkill.skill))
+            .filter(
+                User.is_active.is_(True),
+                or_(
+                    User.username.ilike(pattern),
+                    User.first_name.ilike(pattern),
+                    User.last_name.ilike(pattern),
+                    User.role.ilike(pattern),
+                    User.headline.ilike(pattern),
+                ),
+            )
         )
         query = _apply_user_filters(
             query,
@@ -351,7 +389,9 @@ def search_users(
             remote=remote,
         )
         results = (
-            query.order_by(User.is_verified.desc(), User.premium.desc(), User.username.asc())
+            query.order_by(
+                User.is_verified.desc(), User.premium.desc(), User.username.asc()
+            )
             .limit(fetch_limit)
             .all()
         )
@@ -584,12 +624,175 @@ def search_tags(db: Session, q: str, limit: int = 20) -> List[SearchResultTag]:
 
 
 def count_results(db: Session, q: str) -> SearchCounts:
-    """Return per-category counts for the active query without fetching rows."""
-    users = len(search_users(db, q, limit=10_000))
-    projects = len(search_projects(db, q, limit=10_000))
-    organizations = len(search_organizations(db, q, limit=10_000))
-    skills = len(search_skills(db, q, limit=10_000))
-    tags_count = len(search_tags(db, q, limit=10_000))
+    """Return per-category counts for the active query using efficient SQL count queries."""
+    clean_q = _normalize_query(q)
+    if not clean_q:
+        return SearchCounts(
+            developers=0,
+            projects=0,
+            organizations=0,
+            skills=0,
+            tags=0,
+            total=0,
+        )
+
+    # 1. Developers count
+    if _is_postgres(db):
+        ts_vector_u = func.to_tsvector(
+            "english",
+            func.coalesce(User.username, "")
+            + " "
+            + func.coalesce(User.first_name, "")
+            + " "
+            + func.coalesce(User.last_name, "")
+            + " "
+            + func.coalesce(User.role, "")
+            + " "
+            + func.coalesce(User.headline, ""),
+        )
+        ts_query_u = func.websearch_to_tsquery("english", clean_q)
+        users = (
+            db.query(func.count(User.id))
+            .filter(User.is_active.is_(True), ts_vector_u.op("@@")(ts_query_u))
+            .scalar()
+            or 0
+        )
+    else:
+        pattern = _ilike_pattern(q)
+        users = (
+            db.query(func.count(User.id))
+            .filter(
+                User.is_active.is_(True),
+                or_(
+                    User.username.ilike(pattern),
+                    User.first_name.ilike(pattern),
+                    User.last_name.ilike(pattern),
+                    User.role.ilike(pattern),
+                    User.headline.ilike(pattern),
+                ),
+            )
+            .scalar()
+            or 0
+        )
+
+    # 2. Projects count
+    if _is_postgres(db):
+        ts_vector_p = func.to_tsvector(
+            "english",
+            func.coalesce(Project.title, "")
+            + " "
+            + func.coalesce(Project.tagline, "")
+            + " "
+            + func.coalesce(Project.description, "")
+            + " "
+            + func.coalesce(Project.tech_stack, ""),
+        )
+        ts_query_p = func.websearch_to_tsquery("english", clean_q)
+        projects = (
+            db.query(func.count(Project.id))
+            .filter(
+                Project.is_published.is_(True),
+                Project.is_archived.is_(False),
+                ts_vector_p.op("@@")(ts_query_p),
+            )
+            .scalar()
+            or 0
+        )
+    else:
+        pattern = _ilike_pattern(q)
+        projects = (
+            db.query(func.count(Project.id))
+            .filter(
+                Project.is_published.is_(True),
+                Project.is_archived.is_(False),
+                or_(
+                    Project.title.ilike(pattern),
+                    Project.tagline.ilike(pattern),
+                    Project.description.ilike(pattern),
+                    Project.tech_stack.ilike(pattern),
+                ),
+            )
+            .scalar()
+            or 0
+        )
+
+    # 3. Organizations count
+    if _is_postgres(db):
+        ts_vector_o = func.to_tsvector(
+            "english",
+            func.coalesce(Organization.name, "")
+            + " "
+            + func.coalesce(Organization.slug, "")
+            + " "
+            + func.coalesce(Organization.description, "")
+            + " "
+            + func.coalesce(Organization.location, ""),
+        )
+        ts_query_o = func.websearch_to_tsquery("english", clean_q)
+        organizations = (
+            db.query(func.count(Organization.id))
+            .filter(
+                Organization.active.is_(True),
+                ts_vector_o.op("@@")(ts_query_o),
+            )
+            .scalar()
+            or 0
+        )
+    else:
+        pattern = _ilike_pattern(q)
+        organizations = (
+            db.query(func.count(Organization.id))
+            .filter(
+                Organization.active.is_(True),
+                or_(
+                    Organization.name.ilike(pattern),
+                    Organization.slug.ilike(pattern),
+                    Organization.description.ilike(pattern),
+                    Organization.location.ilike(pattern),
+                ),
+            )
+            .scalar()
+            or 0
+        )
+
+    # 4. Skills count
+    if _is_postgres(db):
+        ts_vector_s = func.to_tsvector(
+            "english",
+            func.coalesce(Skill.name, "")
+            + " "
+            + func.coalesce(Skill.normalized_name, "")
+            + " "
+            + func.coalesce(Skill.category, "")
+            + " "
+            + func.coalesce(Skill.description, ""),
+        )
+        ts_query_s = func.websearch_to_tsquery("english", clean_q)
+        skills = (
+            db.query(func.count(Skill.id))
+            .filter(ts_vector_s.op("@@")(ts_query_s))
+            .scalar()
+            or 0
+        )
+    else:
+        pattern = _ilike_pattern(q)
+        skills = (
+            db.query(func.count(Skill.id))
+            .filter(
+                or_(
+                    Skill.name.ilike(pattern),
+                    Skill.normalized_name.ilike(pattern),
+                    Skill.category.ilike(pattern),
+                    Skill.description.ilike(pattern),
+                )
+            )
+            .scalar()
+            or 0
+        )
+
+    # 5. Tags count
+    tags_count = len(search_tags(db, q, limit=100))
+
     return SearchCounts(
         developers=users,
         projects=projects,
@@ -820,9 +1023,9 @@ class SearchService:
                     experience_level=u.experience_level,
                     company=u.company,
                     open_to_work=u.open_to_work,
-                    skills=[
-                        us.skill.name for us in (u.user_skills or []) if us.skill
-                    ][:6],
+                    skills=[us.skill.name for us in (u.user_skills or []) if us.skill][
+                        :6
+                    ],
                 )
                 for u in users
             ],

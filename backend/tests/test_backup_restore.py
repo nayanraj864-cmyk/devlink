@@ -24,8 +24,7 @@ from app.schemas.backup import (
     BackupCreateResponse,
     RestoreResponse,
 )
-from app.services.backup_service import BackupService, _sha256
-
+from app.services.backup_service import BackupService, _canonical_json, _sha256, _sign
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -202,25 +201,39 @@ class TestCreateBackup:
 # ---------------------------------------------------------------------------
 
 
-def _build_valid_payload(user: MagicMock | None = None) -> dict:
-    """Return a structurally valid backup payload dict."""
+def _build_valid_payload(user: MagicMock | None = None, data: dict | None = None) -> dict:
+    """
+    Return a structurally valid, correctly signed backup payload.
+
+    `metadata.user_id` is the given user's, because restore now checks it: a
+    backup is restorable into the account it was exported from and no other.
+    """
     if user is None:
         user = _make_user()
-    data = {"profile": {"username": user.username}, "projects": [], "skills": []}
-    data_json = json.dumps(data, sort_keys=True, default=str)
-    checksum = _sha256(data_json)
+    if data is None:
+        data = {"profile": {"username": user.username}, "projects": [], "skills": []}
+    data_json = _canonical_json(data)
     return {
         "metadata": {
             "version": "1.0",
             "backup_id": str(uuid.uuid4()),
             "created_at": datetime.now(timezone.utc).isoformat(),
             "app_name": "DevLink",
-            "user_id": str(uuid.uuid4()),
-            "username": "testuser",
+            "user_id": str(user.id),
+            "username": user.username,
         },
-        "checksum": checksum,
+        "checksum": _sha256(data_json),
+        "signature": _sign(data_json),
         "data": data,
     }
+
+
+def _reseal(payload: dict) -> dict:
+    """Recompute checksum and signature after editing a payload's data."""
+    data_json = _canonical_json(payload["data"])
+    payload["checksum"] = _sha256(data_json)
+    payload["signature"] = _sign(data_json)
+    return payload
 
 
 class TestValidateBackup:
@@ -268,7 +281,9 @@ class TestValidateBackup:
         payload["metadata"]["version"] = "99.0"
         # Recompute checksum so only version triggers error
         data_json = json.dumps(payload["data"], sort_keys=True, default=str)
+        # codeql[py/weak-sensitive-data-hashing] These are high entropy tokens, not passwords
         payload["checksum"] = _sha256(data_json)
+        payload["signature"] = _sign(data_json)
         result = BackupService.validate_backup(payload)
         assert result.valid is False
         fields = [e.field for e in result.errors]
@@ -325,7 +340,9 @@ class TestRestoreBackup:
         payload["data"]["profile"] = {"bio": "new bio", "headline": "new headline"}
         # Recompute checksum
         data_json = json.dumps(payload["data"], sort_keys=True, default=str)
+        # codeql[py/weak-sensitive-data-hashing] These are high entropy tokens, not passwords
         payload["checksum"] = _sha256(data_json)
+        payload["signature"] = _sign(data_json)
 
         result = BackupService.restore_backup(db, user, payload)
         assert result.success is True
@@ -342,7 +359,9 @@ class TestRestoreBackup:
         payload = _build_valid_payload(user)
         payload["data"]["bookmarks"] = [{"project_id": str(uuid.uuid4())}]
         data_json = json.dumps(payload["data"], sort_keys=True, default=str)
+        # codeql[py/weak-sensitive-data-hashing] These are high entropy tokens, not passwords
         payload["checksum"] = _sha256(data_json)
+        payload["signature"] = _sign(data_json)
 
         result = BackupService.restore_backup(db, user, payload)
         assert result.restored["bookmarks"] == 0
@@ -356,7 +375,9 @@ class TestRestoreBackup:
         payload = _build_valid_payload(user)
         payload["data"]["skills"] = [{"id": str(uuid.uuid4()), "name": "Python"}]
         data_json = json.dumps(payload["data"], sort_keys=True, default=str)
+        # codeql[py/weak-sensitive-data-hashing] These are high entropy tokens, not passwords
         payload["checksum"] = _sha256(data_json)
+        payload["signature"] = _sign(data_json)
 
         result = BackupService.restore_backup(db, user, payload)
         assert result.restored["skills"] == 0

@@ -31,6 +31,12 @@ class MemberRole(str, Enum):
     MEMBER = "member"
 
 
+class InvitationStatus(str, Enum):
+    PENDING = "pending"
+    EXPIRED = "expired"
+    ACCEPTED = "accepted"
+
+
 class ProjectMember(Base):
     """
     Members belonging to a project.
@@ -90,6 +96,11 @@ class ProjectMember(Base):
         nullable=False,
     )
 
+    expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
     joined_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -126,6 +137,15 @@ class ProjectMember(Base):
         onupdate=func.now(),
         nullable=False,
     )
+
+    def invitation_status(self) -> InvitationStatus:
+        from app.utils.time import is_expired
+
+        if self.is_active:
+            return InvitationStatus.ACCEPTED
+        if is_expired(self.expires_at):
+            return InvitationStatus.EXPIRED
+        return InvitationStatus.PENDING
 
     def __repr__(self) -> str:
         return (

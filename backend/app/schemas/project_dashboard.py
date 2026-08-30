@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from pydantic import BaseModel
-from app.models.project_member import MemberRole
+from app.models.project_member import InvitationStatus, MemberRole
 from app.schemas.activity import ActivityResponse
 from app.schemas.milestone import MilestoneResponse
 from app.schemas.announcement import AnnouncementResponse
@@ -26,6 +26,8 @@ class DashboardInvitation(BaseModel):
     profile_image: str | None
     role: MemberRole
     invited_at: datetime
+    expires_at: datetime | None = None
+    status: InvitationStatus
 
 
 class ProjectDashboardResponse(BaseModel):

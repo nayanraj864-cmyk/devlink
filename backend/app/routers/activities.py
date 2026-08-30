@@ -26,8 +26,11 @@ router = APIRouter(
 )
 
 
-def check_activity_visibility(db: Session, actor_id: uuid.UUID, viewer: User | None) -> None:
+def check_activity_visibility(
+    db: Session, actor_id: uuid.UUID, viewer: User | None
+) -> None:
     from app.services.user_service import UserService
+
     actor = UserService.get_user(db, actor_id)
     if actor:
         if actor.is_private:
@@ -39,7 +42,7 @@ def check_activity_visibility(db: Session, actor_id: uuid.UUID, viewer: User | N
 
         settings = actor.get_privacy_settings()
         activity_visibility = settings.get("activity", "public")
-        
+
         is_visible = False
         if activity_visibility == "public":
             is_visible = True
@@ -50,13 +53,16 @@ def check_activity_visibility(db: Session, actor_id: uuid.UUID, viewer: User | N
                 is_visible = True
             else:
                 from app.services.follower_service import FollowerService
+
                 is_visible = FollowerService.is_following(
                     db, follower_id=viewer.id, following_id=actor.id
                 )
         elif activity_visibility == "private":
-            if viewer is not None and (viewer.id == actor.id or getattr(viewer, "is_superuser", False)):
+            if viewer is not None and (
+                viewer.id == actor.id or getattr(viewer, "is_superuser", False)
+            ):
                 is_visible = True
-        
+
         if not is_visible:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -121,9 +127,28 @@ def get_feed(
     activity_types: list[ActivityType] | None = Query(
         None, description="Filter by activity types"
     ),
+    following_only: bool = Query(False, description="Filter feed to followed users"),
     db: Session = Depends(get_database),
     current_user: User | None = Depends(get_optional_current_user),
 ):
+    actor_ids = None
+    if following_only:
+        if not current_user:
+            raise HTTPException(
+                status_code=401,
+                detail="Authentication required for personalized feed",
+            )
+        from sqlalchemy import select
+        from app.models.follower import Follower
+        # Fetch the IDs of users the current user is following
+        actor_ids = list(
+            db.scalars(
+                select(Follower.following_id).where(Follower.follower_id == current_user.id)
+            )
+        )
+        if not actor_ids:
+            actor_ids = [uuid.UUID(int=0)]
+
     if actor_id:
         check_activity_visibility(db, actor_id, current_user)
 
@@ -135,6 +160,7 @@ def get_feed(
         target_id=target_id,
         target_type=target_type,
         activity_types=activity_types,
+        actor_ids=actor_ids,
     )
 
 

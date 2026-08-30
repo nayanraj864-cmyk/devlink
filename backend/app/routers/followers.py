@@ -4,7 +4,7 @@ import uuid
 from typing import Optional
 
 # pyrefly: ignore [missing-import]
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 # pyrefly: ignore [missing-import]
 from sqlalchemy.orm import Session
@@ -12,7 +12,12 @@ from sqlalchemy.orm import Session
 from app.dependencies import get_current_user, get_database, get_optional_current_user
 from app.models.notification import NotificationType
 from app.models.user import User
-from app.schemas.follower import FollowerResponse, FollowStatusResponse
+from app.schemas.follower import (
+    FollowerResponse,
+    FollowStatusResponse,
+    PaginatedFollowersResponse,
+    PaginatedFollowingResponse,
+)
 from app.services.follower_service import FollowerService
 from app.services.notification_service import NotificationService
 
@@ -56,19 +61,6 @@ def follow_user(
         user_id,
     )
 
-    try:
-        NotificationService.enqueue(
-            db,
-            recipient_id=user_id,
-            sender_id=current_user.id,
-            type=NotificationType.FOLLOW,
-            title="New follower",
-            message=f"{current_user.username} started following you.",
-            action_url=f"/users/{current_user.id}",
-        )
-    except Exception as e:
-        print(f"ENQUEUE ERROR: {e}")
-
     return follow
 
 
@@ -102,12 +94,29 @@ def unfollow_user(
 
 @router.get(
     "/",
-    response_model=list[FollowerResponse],
+    response_model=list[FollowerResponse] | PaginatedFollowingResponse,
 )
 def my_following(
+    page: Optional[int] = Query(None, ge=1, description="Page number for pagination"),
+    limit: Optional[int] = Query(None, ge=1, le=100, description="Items per page"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_database),
 ):
+    if page is not None or limit is not None:
+        p = page or 1
+        l = limit or 20
+        items, total, pages, has_next, has_prev = FollowerService.list_following_paginated(
+            db, current_user.id, page=p, limit=l
+        )
+        return PaginatedFollowingResponse(
+            items=[FollowerResponse.model_validate(item) for item in items],
+            total=total,
+            page=p,
+            limit=l,
+            pages=pages,
+            has_next=has_next,
+            has_prev=has_prev,
+        )
 
     return FollowerService.list_following(
         db,
@@ -117,12 +126,29 @@ def my_following(
 
 @router.get(
     "/{user_id}",
-    response_model=list[FollowerResponse],
+    response_model=list[FollowerResponse] | PaginatedFollowersResponse,
 )
 def user_followers(
     user_id: uuid.UUID,
+    page: Optional[int] = Query(None, ge=1, description="Page number for pagination"),
+    limit: Optional[int] = Query(None, ge=1, le=100, description="Items per page"),
     db: Session = Depends(get_database),
 ):
+    if page is not None or limit is not None:
+        p = page or 1
+        l = limit or 20
+        items, total, pages, has_next, has_prev = FollowerService.list_followers_paginated(
+            db, user_id, page=p, limit=l
+        )
+        return PaginatedFollowersResponse(
+            items=[FollowerResponse.model_validate(item) for item in items],
+            total=total,
+            page=p,
+            limit=l,
+            pages=pages,
+            has_next=has_next,
+            has_prev=has_prev,
+        )
 
     return FollowerService.list_followers(
         db,
@@ -132,12 +158,29 @@ def user_followers(
 
 @router.get(
     "/{user_id}/following",
-    response_model=list[FollowerResponse],
+    response_model=list[FollowerResponse] | PaginatedFollowingResponse,
 )
 def user_following(
     user_id: uuid.UUID,
+    page: Optional[int] = Query(None, ge=1, description="Page number for pagination"),
+    limit: Optional[int] = Query(None, ge=1, le=100, description="Items per page"),
     db: Session = Depends(get_database),
 ):
+    if page is not None or limit is not None:
+        p = page or 1
+        l = limit or 20
+        items, total, pages, has_next, has_prev = FollowerService.list_following_paginated(
+            db, user_id, page=p, limit=l
+        )
+        return PaginatedFollowingResponse(
+            items=[FollowerResponse.model_validate(item) for item in items],
+            total=total,
+            page=p,
+            limit=l,
+            pages=pages,
+            has_next=has_next,
+            has_prev=has_prev,
+        )
 
     return FollowerService.list_following(
         db,

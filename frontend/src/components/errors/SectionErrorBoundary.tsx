@@ -72,12 +72,18 @@ export class SectionErrorBoundary extends Component<
             <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-destructive/10 text-destructive">
               <AlertTriangle size={20} />
             </div>
-
             <div className="min-w-0 flex-1">
-              <TypoSection>
+ feature/account-deletion-1307
+              <h3 className="text-[15px] font-semibold tracking-tight text-foreground">
+                Something went wrong in {sectionName}
+              </h3>
+              <p className="mt-1 text-[13px] text-muted-foreground leading-relaxed">
+
+              <TypoSection as="h3" className="text-[15px] font-semibold tracking-tight text-foreground">
                 Something went wrong in {sectionName}
               </TypoSection>
-              <TypoCaption as="p">
+              <TypoCaption as="p" className="mt-1 text-[13px] text-muted-foreground leading-relaxed">
+ main
                 An unexpected error occurred while loading this part of the application. You can try
                 reloading this section or refreshing the page.
               </TypoCaption>

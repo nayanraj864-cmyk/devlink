@@ -9,6 +9,7 @@ from app.dependencies import get_current_user
 from app.models.user import User
 from app.models.background_job import BackgroundJob, JobStatus
 from app.core.celery_app import celery_app
+from app.services.search_service import escape_ilike_pattern
 
 
 def check_admin(user: User = Depends(get_current_user)):
@@ -129,7 +130,8 @@ def get_jobs(
     if task_name:
         stmt = stmt.where(BackgroundJob.task_name == task_name)
     if search:
-        search_filter = f"%{search}%"
+        escaped = escape_ilike_pattern(search)
+        search_filter = f"%{escaped}%"
         stmt = stmt.where(
             or_(
                 BackgroundJob.id.ilike(search_filter),
@@ -149,7 +151,8 @@ def get_jobs(
     if task_name:
         count_stmt = count_stmt.where(BackgroundJob.task_name == task_name)
     if search:
-        search_filter = f"%{search}%"
+        escaped = escape_ilike_pattern(search)
+        search_filter = f"%{escaped}%"
         count_stmt = count_stmt.where(
             or_(
                 BackgroundJob.id.ilike(search_filter),

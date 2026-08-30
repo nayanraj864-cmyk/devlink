@@ -18,19 +18,73 @@ from app.core.rbac import (
     has_project_permission,
     PROJECT_MANAGE_ROLES,
     PROJECT_REMOVE_MEMBERS,
+    PROJECT_VIEW,
 )
 
 
 class ProjectMemberService:
     @classmethod
+    def get_membership(
+        cls,
+        db: Session,
+        project_id: uuid.UUID,
+        user_id: uuid.UUID,
+    ) -> ProjectMember | None:
+        """Return the project membership row, or ``None`` if it does not exist."""
+        return db.scalar(
+            select(ProjectMember).where(
+                ProjectMember.project_id == project_id,
+                ProjectMember.user_id == user_id,
+            )
+        )
+
+    @classmethod
+    def require_membership(
+        cls,
+        db: Session,
+        project_id: uuid.UUID,
+        user_id: uuid.UUID,
+    ) -> ProjectMember:
+        """Return the membership row, or 404 if it does not exist (#1310)."""
+        membership = cls.get_membership(db, project_id, user_id)
+        if membership is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Project membership not found",
+            )
+        return membership
+
+    @classmethod
+    def require_project_member_access(
+        cls,
+        db: Session,
+        project: Project,
+        actor_user: User,
+        permission: str = PROJECT_VIEW,
+        *,
+        forbidden_detail: str = "You do not have access to this project's members",
+    ) -> None:
+        """403 unless the actor belongs to the project or holds ``permission``."""
+        if actor_user.is_superuser or actor_user.id == project.owner_id:
+            return
+
+        if not has_project_permission(db, actor_user.id, project.id, permission):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=forbidden_detail,
+            )
+
+    @classmethod
     def get_project_members(
-        cls, db: Session, project_id: uuid.UUID
+        cls, db: Session, project_id: uuid.UUID, actor_user: User
     ) -> List[Dict[str, Any]]:
         project = db.get(Project, project_id)
         if not project:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
             )
+
+        cls.require_project_member_access(db, project, actor_user)
 
         stmt = (
             select(ProjectMember, User)
@@ -102,15 +156,13 @@ class ProjectMemberService:
                 status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
             )
 
-        # Authorization check
-        if actor_user.id != project.owner_id and not actor_user.is_superuser:
-            if not has_project_permission(
-                db, actor_user.id, project_id, PROJECT_MANAGE_ROLES
-            ):
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Insufficient permissions to manage project roles",
-                )
+        cls.require_project_member_access(
+            db,
+            project,
+            actor_user,
+            PROJECT_MANAGE_ROLES,
+            forbidden_detail="Insufficient permissions to manage project roles",
+        )
 
         # Cannot alter project owner role via normal update
         if target_user_id == project.owner_id:
@@ -119,23 +171,9 @@ class ProjectMemberService:
                 detail="Cannot change project owner role. Use transfer ownership instead.",
             )
 
-        pm = db.scalar(
-            select(ProjectMember).where(
-                ProjectMember.project_id == project_id,
-                ProjectMember.user_id == target_user_id,
-            )
-        )
-        if not pm:
-            pm = ProjectMember(
-                project_id=project_id,
-                user_id=target_user_id,
-                role=new_role,
-                is_active=True,
-            )
-            db.add(pm)
-        else:
-            pm.role = new_role
-            pm.is_active = True
+        pm = cls.require_membership(db, project_id, target_user_id)
+        pm.role = new_role
+        pm.is_active = True
 
         db.commit()
         db.refresh(pm)
@@ -307,28 +345,18 @@ class ProjectMemberService:
             )
 
         # Allow self-removal, otherwise require manage permissions
-        if (
-            actor_user.id != target_user_id
-            and actor_user.id != project.owner_id
-            and not actor_user.is_superuser
-        ):
-            if not has_project_permission(
-                db, actor_user.id, project_id, PROJECT_REMOVE_MEMBERS
-            ):
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Insufficient permissions to remove team members",
-                )
-
-        pm = db.scalar(
-            select(ProjectMember).where(
-                ProjectMember.project_id == project_id,
-                ProjectMember.user_id == target_user_id,
+        if actor_user.id != target_user_id:
+            cls.require_project_member_access(
+                db,
+                project,
+                actor_user,
+                PROJECT_REMOVE_MEMBERS,
+                forbidden_detail="Insufficient permissions to remove team members",
             )
-        )
-        if pm:
-            db.delete(pm)
-            db.commit()
+
+        pm = cls.require_membership(db, project_id, target_user_id)
+        db.delete(pm)
+        db.commit()
 
         # Audit log
         AuditLogService.create_log(
@@ -341,3 +369,170 @@ class ProjectMemberService:
             target_user_id=target_user_id,
             description=f"Removed member {target_user_id} from project",
         )
+
+    @classmethod
+    def cancel_invitation(
+        cls,
+        db: Session,
+        project_id: uuid.UUID,
+        target_user_id: uuid.UUID,
+        actor_user: User,
+    ) -> None:
+        """Cancel a pending project invitation.
+        
+        Only project owners and admins can cancel invitations.
+        Active/accepted or non-pending memberships cannot be cancelled.
+        """
+        project = db.get(Project, project_id)
+        if not project:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Project not found",
+            )
+
+        # 1. Authorization: Only project owner or members with role management / admin permissions
+        is_owner = actor_user.id == project.owner_id
+        is_admin_or_permitted = (
+            actor_user.is_superuser
+            or has_project_permission(db, actor_user.id, project_id, PROJECT_MANAGE_ROLES)
+            or has_project_permission(db, actor_user.id, project_id, PROJECT_REMOVE_MEMBERS)
+        )
+        if not (is_owner or is_admin_or_permitted):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only project owners and admins can cancel invitations",
+            )
+
+        # 2. Retrieve invitation record
+        pm = db.scalar(
+            select(ProjectMember).where(
+                ProjectMember.project_id == project_id,
+                ProjectMember.user_id == target_user_id,
+            )
+        )
+        if not pm:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No invitation found for this user on the project",
+            )
+
+        # 3. State validation: Only pending (is_active is False) invitations can be cancelled
+        if pm.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot cancel invitation: User is already an active member of this project",
+            )
+
+        # 4. Remove pending invitation
+        db.delete(pm)
+
+        # 5. Clean up / mark pending invitation notifications
+        try:
+            from app.models.notification import Notification, NotificationType
+
+            pending_notifications = (
+                db.query(Notification)
+                .filter(
+                    Notification.recipient_id == target_user_id,
+                    Notification.project_id == project_id,
+                    Notification.type == NotificationType.PROJECT_INVITE,
+                )
+                .all()
+            )
+            for notif in pending_notifications:
+                notif.read = True
+        except Exception:
+            pass
+
+        db.commit()
+
+        # 6. Emit audit log
+        AuditLogService.create_log(
+            db=db,
+            actor_id=actor_user.id,
+            action=AuditAction.INVITATION_REVOKED,
+            entity_type="project_invitation",
+            entity_id=str(target_user_id),
+            project_id=project_id,
+            target_user_id=target_user_id,
+            description=f"Cancelled pending project invitation for user {target_user_id}",
+        )
+
+    @classmethod
+    def add_member(
+        cls,
+        db: Session,
+        project_id: uuid.UUID,
+        user_id: uuid.UUID,
+        role: MemberRole = MemberRole.MEMBER,
+        is_active: bool = True,
+        actor_user: User | None = None,
+    ) -> ProjectMember:
+        """Add a member to a project with strict duplicate prevention and integrity validation."""
+        from sqlalchemy.exc import IntegrityError
+
+        project = db.get(Project, project_id)
+        if not project:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Project not found",
+            )
+
+        # 1. Check if user is the project owner
+        if user_id == project.owner_id and role != MemberRole.OWNER:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="User is already the owner of this project",
+            )
+
+        # 2. Service-level check for existing membership record
+        existing = db.scalar(
+            select(ProjectMember).where(
+                ProjectMember.project_id == project_id,
+                ProjectMember.user_id == user_id,
+            )
+        )
+        if existing:
+            if existing.is_active:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="User is already an active member of this project",
+                )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="User already has a pending invitation for this project",
+                )
+
+        # 3. Create and persist member record with database integrity safeguard
+        pm = ProjectMember(
+            project_id=project_id,
+            user_id=user_id,
+            role=role,
+            is_active=is_active,
+        )
+        db.add(pm)
+        try:
+            db.commit()
+            db.refresh(pm)
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Duplicate membership: user is already a member of this project",
+            )
+
+        if actor_user:
+            AuditLogService.create_log(
+                db=db,
+                actor_id=actor_user.id,
+                action=AuditAction.PROJECT_MEMBER_ADDED,
+                entity_type="project_member",
+                entity_id=str(pm.id),
+                project_id=project_id,
+                target_user_id=user_id,
+                description=f"Added member {user_id} with role {role.value}",
+            )
+
+        return pm
+

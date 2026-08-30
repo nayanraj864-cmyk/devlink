@@ -82,6 +82,7 @@ def test_project_dashboard_flow(client: TestClient, register_and_login, db: Sess
     assert len(data["members"]) == 3  # Owner, member, regular
     assert len(data["pending_invitations"]) == 1
     assert data["pending_invitations"][0]["user_id"] == non_member_id
+    assert data["pending_invitations"][0]["status"] == "pending"
 
     # Active Member should succeed
     resp_member = client.get(

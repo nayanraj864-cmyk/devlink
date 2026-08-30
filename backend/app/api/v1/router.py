@@ -36,6 +36,11 @@ from app.routers import (
     project_documents,
     project_dashboards,
     project_releases,
+    project_polls,
+    project_meeting_notes,
+    project_faq,
+    project_dependencies,
+    project_watchers,
     projects,
     permissions,
     recommendations,
@@ -75,9 +80,7 @@ api_v1_router.include_router(auth.router, prefix="/auth", tags=["Authentication"
 api_v1_router.include_router(mfa.router)
 api_v1_router.include_router(oauth_linking.router)
 api_v1_router.include_router(users.router, prefix="/users", tags=["Users"])
-api_v1_router.include_router(
-    permissions.router, prefix="/users", tags=["Permissions"]
-)
+api_v1_router.include_router(permissions.router, prefix="/users", tags=["Permissions"])
 api_v1_router.include_router(blocks.router, prefix="/blocks", tags=["User Blocks"])
 api_v1_router.include_router(export.router, prefix="/users", tags=["Export"])
 api_v1_router.include_router(pinned_projects.router)
@@ -99,7 +102,9 @@ api_v1_router.include_router(
     notifications.router, prefix="/notifications", tags=["Notifications"]
 )
 api_v1_router.include_router(followers.router, prefix="/followers", tags=["Followers"])
-api_v1_router.include_router(connections.router, prefix="/connections", tags=["Connections"])
+api_v1_router.include_router(
+    connections.router, prefix="/connections", tags=["Connections"]
+)
 api_v1_router.include_router(bookmarks.router)
 api_v1_router.include_router(bookmark_collections.router)
 api_v1_router.include_router(activities.router)
@@ -108,9 +113,7 @@ api_v1_router.include_router(conversations.router)
 api_v1_router.include_router(
     profile_summary.router, prefix="/profile-summary", tags=["Profile Summary"]
 )
-api_v1_router.include_router(
-    profile_suggestions.router, tags=["Profile Suggestions"]
-)
+api_v1_router.include_router(profile_suggestions.router, tags=["Profile Suggestions"])
 api_v1_router.include_router(
     profile_suggestions.router,
     prefix="/users/me",
@@ -148,4 +151,8 @@ api_v1_router.include_router(
     hackathons.router, prefix="/hackathons", tags=["Hackathons"]
 )
 api_v1_router.include_router(feature_announcements.router)
-
+api_v1_router.include_router(project_polls.router)
+api_v1_router.include_router(project_meeting_notes.router)
+api_v1_router.include_router(project_faq.router)
+api_v1_router.include_router(project_dependencies.router)
+api_v1_router.include_router(project_watchers.router)

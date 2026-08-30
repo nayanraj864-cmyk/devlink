@@ -17,6 +17,7 @@ from app.schemas.feature_announcement import (
     FeatureAnnouncementResponse,
     FeatureAnnouncementUpdate,
 )
+from app.services.search_service import escape_ilike_pattern
 
 
 class FeatureAnnouncementService:
@@ -107,7 +108,8 @@ class FeatureAnnouncementService:
             base_filter.append(FeatureAnnouncement.is_featured.is_(is_featured))
 
         if q:
-            search_pattern = f"%{q.strip()}%"
+            escaped = escape_ilike_pattern(q.strip())
+            search_pattern = f"%{escaped}%"
             base_filter.append(
                 or_(
                     FeatureAnnouncement.title.ilike(search_pattern),

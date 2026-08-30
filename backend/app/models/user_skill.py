@@ -7,6 +7,7 @@ from enum import Enum
 from sqlalchemy import (
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     UniqueConstraint,
     func,
@@ -40,6 +41,7 @@ class UserSkill(Base):
             "skill_id",
             name="uq_user_skill",
         ),
+        Index("ix_user_skills_skill_user", "skill_id", "user_id"),
     )
 
     # ----------------------------------------------------------

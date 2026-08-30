@@ -33,6 +33,8 @@ import type {
   Issue,
   IssueCreateInput,
   IssueUpdateInput,
+  PostComment,
+  PostEngagement,
   TechStackResponse,
 } from "@/api";
 import type { Hackathon, Flare, Message } from "@/mocks/seed";
@@ -140,12 +142,24 @@ export const projectsService = {
   updateDraft: (id: string, body: any) =>
     withFallback(() => projectsApi.updateDraft(id, body as any), {} as any),
 
-  clone: (id: string, body?: any) =>
-    projectsApi.clone(id, body),
+  clone: (id: string, body?: any) => projectsApi.clone(id, body),
+  invite: (projectId: string, userId: string) => projectsApi.inviteMember(projectId, userId),
+  cancelInvitation: (projectId: string, userId: string) =>
+    projectsApi.cancelInvitation(projectId, userId),
 };
 
 export const buildersService = {
-  list: () => withFallback(() => buildersApi.list(), seed.builders),
+  list: (query?: {
+    page?: number;
+    limit?: number;
+    q?: string;
+    skills?: string;
+    availability?: boolean;
+    location?: string;
+    experience?: string;
+    remote?: boolean;
+    sort?: string;
+  }) => withFallback(() => buildersApi.list(query), seed.builders),
   get: (id: string) =>
     withFallback(() => buildersApi.get(id), seed.builders.find((b) => b.id === id) ?? null),
   suggested: () => withFallback(() => buildersApi.trending(), seed.builders.slice(3, 6)),
@@ -201,28 +215,19 @@ export const dashboardService = {
 };
 
 export const usersService = {
+  getMe: () => withFallback(() => usersApi.getMe(), null),
   getPrivacySettings: () =>
-    withFallback(
-      () => usersApi.getPrivacySettings(),
-      {
-        email: "private",
-        github: "public",
-        resume: "public",
-        social_links: "public",
-        availability: "public",
-        activity: "public",
-      }
-    ),
+    withFallback(() => usersApi.getPrivacySettings(), {
+      email: "private",
+      github: "public",
+      resume: "public",
+      social_links: "public",
+      availability: "public",
+      activity: "public",
+    }),
   updatePrivacySettings: (body: Record<string, any>) =>
-    withFallback(
-      () => usersApi.updatePrivacySettings(body),
-      {}
-    ),
-  updateMe: (body: Record<string, any>) =>
-    withFallback(
-      () => usersApi.updateMe(body),
-      {}
-    ),
+    withFallback(() => usersApi.updatePrivacySettings(body), {}),
+  updateMe: (body: Record<string, any>) => withFallback(() => usersApi.updateMe(body), {}),
 };
 
 export const activitiesService = {
@@ -292,6 +297,35 @@ export const flaresService = {
   remove: (id: string) =>
     withFallback<void>(async () => {
       await postsApi.remove(id);
+    }, undefined),
+
+  // The server is authoritative about the like count and about whether the
+  // caller has liked the post, and returns both. The offline fallbacks below
+  // only have to be shaped correctly; `changed: false` keeps the optimistic
+  // update in `useToggleLike` from being contradicted when there is no
+  // backend to ask.
+  like: (id: string) =>
+    withFallback<PostEngagement>(() => postsApi.like(id), {
+      post_id: id,
+      likes: 0,
+      comments: 0,
+      liked_by_me: true,
+      changed: false,
+    }),
+  unlike: (id: string) =>
+    withFallback<PostEngagement>(() => postsApi.unlike(id), {
+      post_id: id,
+      likes: 0,
+      comments: 0,
+      liked_by_me: false,
+      changed: false,
+    }),
+
+  comments: (id: string) => withFallback<PostComment[]>(() => postsApi.comments(id), []),
+  comment: (id: string, comment: string) => postsApi.comment(id, comment),
+  removeComment: (postId: string, commentId: string) =>
+    withFallback<void>(async () => {
+      await postsApi.removeComment(postId, commentId);
     }, undefined),
 };
 

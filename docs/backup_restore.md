@@ -1,7 +1,7 @@
 # DevLink Backup & Restore — User Data (#635)
 
-DevLink lets users create a **portable, tamper-proof backup** of all their DevLink
-data and restore it to any account.
+DevLink lets users create a **portable, signed backup** of all their DevLink data
+and restore it to the account it came from.
 
 ---
 
@@ -10,8 +10,10 @@ data and restore it to any account.
 | Feature | Details |
 |---|---|
 | **Backup format** | Signed JSON wrapped in a ZIP archive |
-| **Integrity** | SHA-256 checksum embedded in every backup |
-| **Restore strategy** | Non-destructive merge — existing records are never deleted |
+| **Integrity** | SHA-256 checksum — catches corruption |
+| **Provenance** | HMAC-SHA256 signature, keyed server-side — catches tampering |
+| **Restore strategy** | Bookmarks and skills are merged; profile fields are overwritten |
+| **Scope** | A backup restores only into the account it was exported from |
 | **Sensitive data** | Passwords, MFA secrets, tokens are **never** included |
 
 ---
@@ -123,6 +125,7 @@ The extracted JSON has three top-level sections:
     "username": "alice"
   },
   "checksum": "<sha256 of data section>",
+  "signature": "<hmac-sha256 of data section>",
   "data": {
     "profile": { ... },
     "skills": [ ... ],
@@ -140,7 +143,11 @@ The extracted JSON has three top-level sections:
 ```
 
 > [!IMPORTANT]
-> The `checksum` is a SHA-256 digest of the `data` section serialised as JSON (keys sorted, no whitespace). Any modification to the `data` section will invalidate the backup and it will be rejected on restore.
+> `checksum` and `signature` cover the same bytes — the `data` section serialised as JSON with keys sorted — and answer different questions.
+>
+> The **checksum** is an unkeyed SHA-256. It detects corruption: a truncated download, a mangled copy-paste. It cannot detect tampering, because it is a public function of the data and anyone editing the file can recompute it.
+>
+> The **signature** is an HMAC-SHA256 keyed with a server-side secret. It is what makes "this file came from this DevLink instance" a checkable claim, and it is what `restore` requires. Backups exported before signing was added have no `signature`; `preview` will still describe them, but they cannot be restored. Export a fresh one.
 
 ---
 
@@ -164,11 +171,11 @@ The extracted JSON has three top-level sections:
 
 ## What Gets Restored
 
-The restore operation is a **non-destructive merge**:
+Bookmarks and skills are **merged** — nothing is deleted. Profile fields are **overwritten** from the file where present, which is the one part of a restore that replaces what is already there:
 
 | Section | Restore behaviour |
 |---|---|
-| **Profile fields** | Mutable fields (bio, headline, location, etc.) are updated if the backup value differs |
+| **Profile fields** | Mutable fields (bio, headline, location, etc.) **replace** the current value where the backup value differs. Each one is validated with the same model `PATCH /users/me` uses; a value that fails is skipped and logged rather than failing the whole restore |
 | **Bookmarks** | Re-created for projects that still exist in DevLink |
 | **Skills** | User-skill associations re-created for skills that still exist |
 | Messages | **Not restored** — privacy/conversation ownership |
@@ -181,9 +188,18 @@ The restore operation is a **non-destructive merge**:
 ## Security Considerations
 
 - Backup files **never** contain passwords, MFA secrets, refresh tokens, or API keys.
-- The SHA-256 checksum prevents silent data tampering.
+- The SHA-256 checksum detects corruption. It does **not** detect tampering — see the note on the payload format above.
+- The HMAC signature detects tampering, and is required by `restore`.
 - Only the **authenticated user** can create or restore their own backup.
-- Restore is scoped to the **currently authenticated user** — you cannot restore a backup into another user's account.
+- `metadata.user_id` is checked against the caller: restoring another account's backup file is a `403`, even if the file is perfectly valid.
+- Uploads are capped at `MAX_BACKUP_UPLOAD_MB` (25 MB by default).
+
+### Configuration
+
+| Setting | Default | Purpose |
+|---|---|---|
+| `BACKUP_SIGNING_SECRET` | *(empty — falls back to `SECRET_KEY`)* | Key for the backup HMAC. Set separately to rotate backup signatures without invalidating every session. Rotating it invalidates existing backups. |
+| `MAX_BACKUP_UPLOAD_MB` | `25` | Ceiling on an uploaded backup file. |
 
 ---
 

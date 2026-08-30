@@ -18,11 +18,17 @@ __pycache__/
 .cache/
 
 # Node locks & build artifacts
+#
+# `dist/` has been in this file the whole time and 520 KB of compiled output was
+# tracked underneath it anyway: an ignore rule does not apply to a file git has
+# already recorded. Same story as backend/.env. Untracked in #1348; the rule
+# only started meaning something at that point.
 dist/
 dist-ssr/
 .output/
 .nitro/
 .tanstack/
+.vite/
 
 # Environment files
 #
@@ -67,6 +73,24 @@ docker-data/
 # code that linters, test collection, and CodeQL all still walk.
 fix.py
 fix_*.py
+fix_*.sh
 patch_*.py
 resolve_merge.py
+resolve_conflicts.py
 pr[0-9]*.json
+pr_info.json
+old_*.tsx
+upstream_*.tsx
+
+# Tool output, committed by accident and then read as though it described the
+# current tree. `bandit_report.json` was a 363 KB security scan of a checkout
+# nobody could date; `tsc_errors_2.txt` was 70 KB of type errors that no longer
+# matched the 289 the branch actually had.
+bandit_report.json
+*_report.json
+tsc_errors*.txt
+files_changed.txt
+
+# Patches produced while resolving something, against bases that no longer
+# exist.
+*_patch.diff

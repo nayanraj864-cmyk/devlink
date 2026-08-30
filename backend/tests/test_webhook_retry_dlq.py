@@ -11,6 +11,29 @@ from app.models.webhook import (
 )
 from app.services.webhook_service import WebhookService, calculate_backoff_delay
 from app.core.security import create_access_token
+from app.utils.url_safety import validate_outbound_url
+
+
+@pytest.fixture(autouse=True)
+def offline_url_validation(monkeypatch):
+    """
+    Apply the real destination rules without asking DNS.
+
+    `WebhookService.validate_target` resolves the hostname, and these tests
+    post to `api.example.com`, which does not exist. Substituting the resolver
+    rather than the whole validator keeps every other rule live -- scheme, port,
+    credentials, and the private-address check -- so a test that points at
+    something it should not still fails.
+    """
+
+    def resolver(host: str) -> tuple[str, ...]:
+        return ("93.184.216.34",)  # a public address, and not one we talk to
+
+    monkeypatch.setattr(
+        WebhookService,
+        "validate_target",
+        staticmethod(lambda url: validate_outbound_url(url, resolver=resolver)),
+    )
 
 
 @pytest.fixture

@@ -26,10 +26,13 @@ router = APIRouter(
 )
 def get_project_members(
     project_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_database),
 ):
     """Retrieve all team members and their project roles."""
-    return ProjectMemberService.get_project_members(db=db, project_id=project_id)
+    return ProjectMemberService.get_project_members(
+        db=db, project_id=project_id, actor_user=current_user
+    )
 
 
 @router.put(

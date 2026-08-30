@@ -967,6 +967,11 @@ class AuthService:
             if db_token and str(db_token.user_id) == str(user.id):
                 RefreshTokenService.revoke_token(self.db, db_token)
                 self.db.commit()
+        else:
+            # No refresh token provided (typical client behavior: discard locally)
+            # Revoke ALL refresh tokens for this user to prevent token replay
+            RefreshTokenService.revoke_all_tokens(self.db, user.id)
+            self.db.commit()
         event_bus.publish(
             "USER_LOGOUT",
             email=user.email,

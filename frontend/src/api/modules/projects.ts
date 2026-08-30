@@ -2,6 +2,7 @@ import { api } from "../client";
 import type { Project } from "@/mocks/seed";
 
 export type ProjectStage = "idea" | "in_development" | "beta" | "launched" | "archived";
+export type ApplicationStatus = "pending" | "accepted" | "rejected" | "withdrawn" | "shortlisted" | "interview" | "interviewing";
 
 export interface ExtendedProject extends Project {
   title?: string;
@@ -66,6 +67,8 @@ export const projectsApi = {
     tech?: string;
   }) => api.get<ExtendedProject[]>("/api/projects", { query }),
   myProjects: () => api.get<ExtendedProject[]>("/api/projects/me/list"),
+  listMyProjects: () => api.get<ExtendedProject[]>("/api/projects/me/list"),
+  byUser: (userId: string) => api.get<ExtendedProject[]>(`/api/projects/user/${userId}`),
   get: (id: string) => api.get<ExtendedProject>(`/api/projects/${id}`),
   create: (body: Partial<ExtendedProject>) => api.post<ExtendedProject>("/api/projects", body),
   update: (id: string, body: Partial<ExtendedProject>) =>
@@ -88,6 +91,12 @@ export const projectsApi = {
   archive: (id: string) => api.post<ExtendedProject>(`/api/projects/${id}/archive`),
   /** Unarchive a project back to active status */
   unarchive: (id: string) => api.post<ExtendedProject>(`/api/projects/${id}/unarchive`),
+  /** Invite user to project */
+  inviteMember: (projectId: string, userId: string) =>
+    api.post<{ message: string }>(`/api/projects/${projectId}/invite/${userId}`),
+  /** Cancel a pending project invitation */
+  cancelInvitation: (projectId: string, userId: string) =>
+    api.delete<{ message: string }>(`/api/projects/${projectId}/invitations/${userId}`),
   /** Clone an existing project as a template */
   clone: (id: string, body?: ProjectCloneRequest) =>
     api.post<ExtendedProject>(`/api/projects/${id}/clone`, body || {}),

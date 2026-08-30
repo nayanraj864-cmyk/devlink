@@ -8,6 +8,7 @@ export { usersApi } from "./modules/users";
 export { projectsApi } from "./modules/projects";
 export { buildersApi } from "./modules/builders";
 export { postsApi } from "./modules/posts";
+export type { PostComment, PostCommentAuthor, PostEngagement } from "./modules/posts";
 export { messagesApi } from "./modules/messages";
 export { notificationsApi } from "./modules/notifications";
 export { analyticsApi } from "./modules/analytics";
@@ -122,6 +123,18 @@ export type {
   ProjectTemplateListResponse,
   ProjectTemplateCreateInput,
 } from "./modules/projectTemplates";
+export { skillsApi } from "./modules/skills";
+export type {
+  SkillItem,
+  SkillMatrixResponse,
+  SkillSearchResult,
+} from "./modules/skills";
+export { dashboardLayoutApi } from "./modules/dashboardLayout";
+export type {
+  DashboardWidgetLayout,
+  DashboardLayoutResponse,
+} from "./modules/dashboardLayout";
+export type { PlatformSocialProofResponse } from "./modules/analytics";
 export { featureAnnouncementsApi } from "./modules/featureAnnouncements";
 export type {
   FeatureAnnouncement,
@@ -129,3 +142,10 @@ export type {
   CreateAnnouncementInput,
   AnnouncementCategory,
 } from "./modules/featureAnnouncements";
+
+export { profileViewsApi } from "./modules/profileViews";
+export type {
+  ProfileViewItem,
+  PaginatedProfileViewsResponse,
+  ProfileViewPrivacyResponse,
+} from "./modules/profileViews";

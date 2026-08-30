@@ -6,6 +6,7 @@ from datetime import datetime
 from sqlalchemy import (
     DateTime,
     ForeignKey,
+    Index,
     UniqueConstraint,
     func,
 )
@@ -28,6 +29,8 @@ class Follower(Base):
             "following_id",
             name="uq_follower_relationship",
         ),
+        Index("ix_followers_following_created_at", "following_id", "created_at"),
+        Index("ix_followers_follower_created_at", "follower_id", "created_at"),
     )
 
     # ==========================================================

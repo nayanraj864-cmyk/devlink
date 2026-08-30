@@ -18,6 +18,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.dependencies import get_current_active_user, get_database
 from app.models.user import User
 from app.schemas.backup import (
@@ -25,9 +26,45 @@ from app.schemas.backup import (
     RestoreResponse,
     RestoreValidationResponse,
 )
-from app.services.backup_service import BackupService
+from app.services.backup_service import BackupOwnershipError, BackupService
 
 router = APIRouter(prefix="/users/me/backup", tags=["Backup & Restore"])
+
+
+async def _read_backup_upload(file: UploadFile) -> dict:
+    """
+    Read an uploaded backup and parse it, with a ceiling.
+
+    All three upload endpoints used to do a bare ``await file.read()``: no
+    size limit, no streaming, the whole file resident before anything looked
+    at it. The upload has to be materialised to be parsed as JSON, so the
+    ceiling is the honest way to bound that -- read one byte past the limit
+    and refuse if it arrives.
+    """
+    max_bytes = settings.MAX_BACKUP_UPLOAD_MB * 1024 * 1024
+    raw = await file.read(max_bytes + 1)
+
+    if len(raw) > max_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=(
+                f"Backup file exceeds the {settings.MAX_BACKUP_UPLOAD_MB} MB limit."
+            ),
+        )
+
+    if not raw:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Backup file is empty.",
+        )
+
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid JSON: {exc}",
+        ) from exc
 
 
 # ---------------------------------------------------------------------------
@@ -105,15 +142,12 @@ async def validate_backup(
     file: UploadFile = File(..., description="The devlink_backup_<id>.json file"),
     current_user: User = Depends(get_current_active_user),
 ) -> RestoreValidationResponse:
-    raw = await file.read()
-    try:
-        payload = json.loads(raw)
-    except json.JSONDecodeError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Invalid JSON: {exc}",
-        )
-    return BackupService.validate_backup(payload)
+    payload = await _read_backup_upload(file)
+    # The same checks restore will run, reported rather than raised, so the
+    # answer here and the outcome there cannot disagree.
+    return BackupService.validate_backup(
+        payload, expected_user_id=str(current_user.id)
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -133,17 +167,13 @@ async def preview_restore(
     file: UploadFile = File(..., description="The devlink_backup_<id>.json file"),
     current_user: User = Depends(get_current_active_user),
 ) -> dict:
-    raw = await file.read()
-    try:
-        payload = json.loads(raw)
-    except json.JSONDecodeError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Invalid JSON: {exc}",
-        )
+    payload = await _read_backup_upload(file)
 
-    # Validate integrity before preview
-    validation = BackupService.validate_backup(payload)
+    # Preview changes nothing, so it will describe an older unsigned file
+    # rather than refuse it -- the response carries `signed` so the caller can
+    # see that restoring it will not work. Structure and checksum still have
+    # to hold, or there is nothing coherent to describe.
+    validation = BackupService.validate_backup(payload, require_signature=False)
     if not validation.valid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -177,19 +207,19 @@ async def restore_backup(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_database),
 ) -> RestoreResponse:
-    raw = await file.read()
-    try:
-        payload = json.loads(raw)
-    except json.JSONDecodeError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Invalid JSON: {exc}",
-        )
+    payload = await _read_backup_upload(file)
 
     try:
         return BackupService.restore_backup(db, current_user, payload)
+    except BackupOwnershipError as exc:
+        # Not "your file is malformed" -- it is well-formed and belongs to
+        # someone else.
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(exc),
+        ) from exc
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(exc),
-        )
+        ) from exc

@@ -14,6 +14,7 @@ from app.schemas.project_template import (
     ProjectTemplateUpdate,
     ProjectTemplateResponse,
 )
+from app.services.search_service import escape_ilike_pattern
 
 
 def _generate_slug(title: str) -> str:
@@ -91,10 +92,13 @@ class ProjectTemplateService:
         skip: int = 0,
         limit: int = 20,
     ) -> tuple[list[ProjectTemplateResponse], int]:
-        stmt = select(ProjectTemplate).where(ProjectTemplate.is_published == True)  # noqa: E712
+        stmt = select(ProjectTemplate).where(
+            ProjectTemplate.is_published == True
+        )  # noqa: E712
 
         if search:
-            search_pattern = f"%{search.strip()}%"
+            escaped = escape_ilike_pattern(search.strip())
+            search_pattern = f"%{escaped}%"
             stmt = stmt.where(
                 or_(
                     ProjectTemplate.title.ilike(search_pattern),
@@ -241,9 +245,11 @@ class ProjectTemplateService:
             description=proj_desc,
             tagline=f"Cloned from template: {template.title}",
             owner_id=user_id,
-            tech_stack=", ".join(template.tech_stack)
-            if isinstance(template.tech_stack, list)
-            else str(template.tech_stack or ""),
+            tech_stack=(
+                ", ".join(template.tech_stack)
+                if isinstance(template.tech_stack, list)
+                else str(template.tech_stack or "")
+            ),
         )
 
         db.add(project)

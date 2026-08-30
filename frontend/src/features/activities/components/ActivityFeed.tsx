@@ -74,12 +74,13 @@ function ActivitySkeleton() {
 
 export function ActivityFeed({ actorId, targetId, targetType }: ActivityFeedProps) {
   const [activeFilterId, setActiveFilterId] = useState<string>("all");
+  const [followingOnly, setFollowingOnly] = useState<boolean>(false);
 
   const activeFilter = FILTERS.find((f) => f.id === activeFilterId);
   const activityTypes = activeFilter?.types;
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } = useInfiniteQuery({
-    queryKey: ["activities", { actorId, targetId, targetType, activityTypes }],
+    queryKey: ["activities", { actorId, targetId, targetType, activityTypes, followingOnly }],
     queryFn: async ({ pageParam }) => {
       const response = await activitiesApi.getFeed({
         limit: PAGE_SIZE,
@@ -88,6 +89,7 @@ export function ActivityFeed({ actorId, targetId, targetType }: ActivityFeedProp
         target_id: targetId,
         target_type: targetType,
         activity_types: activityTypes,
+        following_only: followingOnly,
       });
       return response;
     },
@@ -115,21 +117,33 @@ export function ActivityFeed({ actorId, targetId, targetType }: ActivityFeedProp
 
   return (
     <div className="w-full max-w-3xl mx-auto space-y-6">
-      <div className="flex flex-wrap gap-2 pb-2" role="group" aria-label="Activity filters">
-        {FILTERS.map((filter) => (
-          <button
-            key={filter.id}
-            onClick={() => setActiveFilterId(filter.id)}
-            aria-pressed={activeFilterId === filter.id}
-            className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
-              activeFilterId === filter.id
-                ? "bg-indigo-600 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-          >
-            {filter.label}
-          </button>
-        ))}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-gray-100">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Activity filters">
+          {FILTERS.map((filter) => (
+            <button
+              key={filter.id}
+              onClick={() => setActiveFilterId(filter.id)}
+              aria-pressed={activeFilterId === filter.id}
+              className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
+                activeFilterId === filter.id
+                  ? "bg-indigo-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
+
+        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={followingOnly}
+            onChange={(e) => setFollowingOnly(e.target.checked)}
+            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+          />
+          <span>Following Only</span>
+        </label>
       </div>
 
       <div className="space-y-4" role="feed" aria-busy={status === "pending" || isFetchingNextPage}>

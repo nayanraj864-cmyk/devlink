@@ -37,6 +37,10 @@ class FollowerService:
                 detail="Cannot follow a user who has blocked you or whom you have blocked.",
             )
 
+        existing = FollowerService.get_relationship(db, follower_id, following_id)
+        if existing:
+            return existing
+
         relationship = Follower(
             follower_id=follower_id,
             following_id=following_id,
@@ -117,29 +121,91 @@ class FollowerService:
     def list_followers(
         db: Session,
         user_id: uuid.UUID,
+        skip: int = 0,
+        limit: int | None = None,
     ) -> list[Follower]:
-
         stmt = (
             select(Follower)
             .where(Follower.following_id == user_id)
             .order_by(Follower.created_at.desc())
         )
+        if skip:
+            stmt = stmt.offset(skip)
+        if limit is not None:
+            stmt = stmt.limit(limit)
 
         return list(db.scalars(stmt))
+
+    @staticmethod
+    def list_followers_paginated(
+        db: Session,
+        user_id: uuid.UUID,
+        page: int = 1,
+        limit: int = 20,
+    ) -> tuple[list[Follower], int, int, bool, bool]:
+        page = max(1, int(page or 1))
+        limit = max(1, min(int(limit or 20), 100))
+        offset = (page - 1) * limit
+
+        total = FollowerService.follower_count(db, user_id)
+        pages = max(1, (total + limit - 1) // limit) if total > 0 else 1
+
+        items = FollowerService.list_followers(
+            db=db,
+            user_id=user_id,
+            skip=offset,
+            limit=limit,
+        )
+
+        has_next = page < pages
+        has_prev = page > 1
+
+        return items, total, pages, has_next, has_prev
 
     @staticmethod
     def list_following(
         db: Session,
         user_id: uuid.UUID,
+        skip: int = 0,
+        limit: int | None = None,
     ) -> list[Follower]:
-
         stmt = (
             select(Follower)
             .where(Follower.follower_id == user_id)
             .order_by(Follower.created_at.desc())
         )
+        if skip:
+            stmt = stmt.offset(skip)
+        if limit is not None:
+            stmt = stmt.limit(limit)
 
         return list(db.scalars(stmt))
+
+    @staticmethod
+    def list_following_paginated(
+        db: Session,
+        user_id: uuid.UUID,
+        page: int = 1,
+        limit: int = 20,
+    ) -> tuple[list[Follower], int, int, bool, bool]:
+        page = max(1, int(page or 1))
+        limit = max(1, min(int(limit or 20), 100))
+        offset = (page - 1) * limit
+
+        total = FollowerService.following_count(db, user_id)
+        pages = max(1, (total + limit - 1) // limit) if total > 0 else 1
+
+        items = FollowerService.list_following(
+            db=db,
+            user_id=user_id,
+            skip=offset,
+            limit=limit,
+        )
+
+        has_next = page < pages
+        has_prev = page > 1
+
+        return items, total, pages, has_next, has_prev
 
     @staticmethod
     def follower_count(

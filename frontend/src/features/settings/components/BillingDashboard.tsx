@@ -37,13 +37,37 @@ const MOCK_PAYMENT_METHOD = {
 };
 
 const MOCK_HISTORY = [
-  { id: "inv_1", date: "Aug 01, 2026", description: "Pro Plan - Monthly", amount: "$19.00", status: "Paid", invoiceNo: "INV-2026-08-001" },
-  { id: "inv_2", date: "Jul 01, 2026", description: "Pro Plan - Monthly", amount: "$19.00", status: "Paid", invoiceNo: "INV-2026-07-001" },
-  { id: "inv_3", date: "Jun 01, 2026", description: "Pro Plan - Monthly", amount: "$19.00", status: "Paid", invoiceNo: "INV-2026-06-001" },
+  {
+    id: "inv_1",
+    date: "Aug 01, 2026",
+    description: "Pro Plan - Monthly",
+    amount: "$19.00",
+    status: "Paid",
+    invoiceNo: "INV-2026-08-001",
+  },
+  {
+    id: "inv_2",
+    date: "Jul 01, 2026",
+    description: "Pro Plan - Monthly",
+    amount: "$19.00",
+    status: "Paid",
+    invoiceNo: "INV-2026-07-001",
+  },
+  {
+    id: "inv_3",
+    date: "Jun 01, 2026",
+    description: "Pro Plan - Monthly",
+    amount: "$19.00",
+    status: "Paid",
+    invoiceNo: "INV-2026-06-001",
+  },
 ];
+
+import { RazorpaySubscriptionModal } from "@/components/billing/RazorpaySubscriptionModal";
 
 export function BillingDashboard() {
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [isRazorpayModalOpen, setIsRazorpayModalOpen] = useState(false);
   const [isCanceling, setIsCanceling] = useState(false);
 
   const usagePercent = (MOCK_USAGE.storage.used / MOCK_USAGE.storage.total) * 100;
@@ -78,7 +102,8 @@ export function BillingDashboard() {
           </div>
           <div className="mt-6 pt-4 border-t border-border">
             <TypoCaption as="p">
-              Renews on <span className="font-medium text-foreground">{MOCK_PLAN.nextBillingDate}</span>
+              Renews on{" "}
+              <span className="font-medium text-foreground">{MOCK_PLAN.nextBillingDate}</span>
             </TypoCaption>
           </div>
         </Card>
@@ -143,7 +168,9 @@ export function BillingDashboard() {
               {MOCK_HISTORY.map((item) => (
                 <tr key={item.id} className="transition-colors hover:bg-muted/50">
                   <td className="px-5 py-3 text-foreground whitespace-nowrap">{item.date}</td>
-                  <td className="px-5 py-3 text-foreground whitespace-nowrap">{item.description}</td>
+                  <td className="px-5 py-3 text-foreground whitespace-nowrap">
+                    {item.description}
+                  </td>
                   <td className="px-5 py-3 text-foreground whitespace-nowrap">{item.amount}</td>
                   <td className="px-5 py-3 whitespace-nowrap">
                     <span className="rounded-full bg-success/10 px-2 py-0.5 text-xs font-semibold text-success">
@@ -151,7 +178,11 @@ export function BillingDashboard() {
                     </span>
                   </td>
                   <td className="px-5 py-3 text-right whitespace-nowrap">
-                    <Button variant="outline" size="sm" className="h-8 gap-1.5 text-muted-foreground hover:text-foreground">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 gap-1.5 text-muted-foreground hover:text-foreground"
+                    >
                       <Download size={14} />
                       <span className="sr-only sm:not-sr-only">Download</span>
                     </Button>
@@ -170,12 +201,21 @@ export function BillingDashboard() {
           Upgrade your plan for more storage and features, or cancel your current subscription.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
-          <Button>Upgrade Plan</Button>
+          <Button onClick={() => setIsRazorpayModalOpen(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white">
+            Subscribe with Razorpay (UPI / INR)
+          </Button>
+          <Button variant="outline">Upgrade Plan</Button>
           <Button variant="destructive" onClick={() => setIsCancelModalOpen(true)}>
             Cancel Subscription
           </Button>
         </div>
       </Card>
+
+      {/* Razorpay Subscription Modal */}
+      <RazorpaySubscriptionModal
+        isOpen={isRazorpayModalOpen}
+        onClose={() => setIsRazorpayModalOpen(false)}
+      />
 
       {/* Cancel Confirmation Dialog */}
       <Dialog open={isCancelModalOpen} onOpenChange={setIsCancelModalOpen}>
@@ -188,10 +228,19 @@ export function BillingDashboard() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-4 gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setIsCancelModalOpen(false)} disabled={isCanceling}>
+            <Button
+              variant="outline"
+              onClick={() => setIsCancelModalOpen(false)}
+              disabled={isCanceling}
+            >
               Keep subscription
             </Button>
-            <Button variant="destructive" onClick={handleCancelSubscription} disabled={isCanceling} className="gap-2">
+            <Button
+              variant="destructive"
+              onClick={handleCancelSubscription}
+              disabled={isCanceling}
+              className="gap-2"
+            >
               {isCanceling && <Loader2 size={14} className="animate-spin" />}
               {isCanceling ? "Canceling..." : "Cancel subscription"}
             </Button>

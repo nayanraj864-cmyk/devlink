@@ -239,13 +239,26 @@ class ConnectionManager:
             except Exception:
                 dead.append(conn)
         for conn in dead:
-            await self.disconnect(conn, user_id)
+            try:
+                await self.disconnect(conn, user_id)
+            except Exception:
+                logger.warning(
+                    "Failed to disconnect dead WebSocket for user %s", user_id, exc_info=True
+                )
 
     async def broadcast_to_room(self, room_id: str, message: dict) -> None:
         """Broadcast ``message`` to every user currently in room ``room_id``."""
         members = self.rooms.get(room_id, set()).copy()
         for user_id in members:
-            await self.send_personal_message(message, user_id)
+            try:
+                await self.send_personal_message(message, user_id)
+            except Exception:
+                logger.warning(
+                    "Failed to send message to user %s in room %s",
+                    user_id,
+                    room_id,
+                    exc_info=True,
+                )
 
     async def broadcast_to_all(
         self, message: dict, exclude_user_id: Optional[str] = None
@@ -254,7 +267,14 @@ class ConnectionManager:
         for user_id in list(self.active_connections.keys()):
             if user_id == exclude_user_id:
                 continue
-            await self.send_personal_message(message, user_id)
+            try:
+                await self.send_personal_message(message, user_id)
+            except Exception:
+                logger.warning(
+                    "Failed to send broadcast message to user %s",
+                    user_id,
+                    exc_info=True,
+                )
 
 
 manager = ConnectionManager()
@@ -523,7 +543,10 @@ async def websocket_collab(websocket: WebSocket, token: str = ""):
                 }
                 if status_val not in allowed_statuses:
                     await manager.send_personal_message(
-                        _event("error", message=f"Invalid collaboration status: {status_val}"),
+                        _event(
+                            "error",
+                            message=f"Invalid collaboration status: {status_val}",
+                        ),
                         user_id,
                     )
                 else:
@@ -644,7 +667,10 @@ async def websocket_collab(websocket: WebSocket, token: str = ""):
                     user_id,
                 )
 
-    except WebSocketDisconnect:
+    except Exception as exc:
+        logger.warning(
+            "WebSocket error for user %s: %s", user_id, exc, exc_info=True
+        )
         await manager.disconnect(websocket, user_id)
         # Notify all rooms the user was in that they left.
         for room_id in list(manager.rooms.keys()):

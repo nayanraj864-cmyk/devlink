@@ -7,6 +7,17 @@ name: Tracked Files
 #
 # Adding the ignore rule alone would not have caught any of that, so this
 # workflow checks the index directly.
+#
+# It happened again anyway (#1348): 520 KB of `dist/` was tracked while `dist/`
+# sat in `.gitignore`, next to a 363 KB bandit report, two patch dumps and two
+# scripts that "resolve" conflicts by keeping both sides. The scratch check
+# below missed them because it enumerated the filenames of the *previous*
+# incident -- it knows `resolve_merge.py` and the file was `resolve_conflicts.py`,
+# it knows `pr123.json` and the file was `pr_info.json`.
+#
+# So the enumeration is now a backstop and `.gitignore` is the source of truth:
+# whatever the ignore rules describe, the index must not contain. That covers
+# the next variation without anyone having to add its name here first.
 
 on:
   pull_request:
@@ -36,10 +47,12 @@ jobs:
               || true
           )
 
-          # Single-use codemods and API-response dumps.
+          # Single-use codemods, shell one-offs and tool dumps. Kept as a
+          # backstop for anything .gitignore has not learned about yet; the
+          # ignored-and-tracked check below is the one that generalises.
           scratch=$(
             git ls-files \
-              | grep -E '(^|/)(fix|fix_[^/]*|patch_[^/]*|resolve_merge)\.py$|(^|/)pr[0-9]+\.json$' \
+              | grep -E '(^|/)(fix|fix_[^/]*|patch_[^/]*|resolve_[^/]*)\.(py|sh)$|(^|/)(pr[0-9]+|pr_info)\.json$|(^|/)(old|upstream)_[^/]*\.tsx?$|(^|/)[^/]*_report\.json$|(^|/)tsc_errors[^/]*\.txt$|(^|/)[^/]*_patch\.diff$' \
               || true
           )
 
@@ -111,3 +124,29 @@ jobs:
           fi
 
           echo "Ignore rules cover .env at every depth and spare the templates."
+
+      # The check that does not need updating for the next incident.
+      - name: Fail if a file is both ignored and tracked
+        run: |
+          set -uo pipefail
+
+          # `git check-ignore` reports nothing for a file that is already in the
+          # index, which is exactly why `dist/` could sit in .gitignore and in
+          # the repository at the same time and look fine from either end.
+          #
+          # `git ls-files -i -c` asks the other question -- which tracked files
+          # do the ignore rules describe? -- and that one has a useful answer.
+          tracked_but_ignored=$(git ls-files --cached --ignored --exclude-standard || true)
+
+          if [ -n "$tracked_but_ignored" ]; then
+            echo "::error::These files are tracked and .gitignore says they"
+            echo "should not be. An ignore rule does not apply to a file git"
+            echo "has already recorded, so the rule is doing nothing here:"
+            echo "$tracked_but_ignored" | sed 's/^/    /'
+            echo
+            echo "  To fix:  git rm --cached <file>   (keeps your local copy)"
+            echo
+            exit 1
+          fi
+
+          echo "Nothing is both ignored and tracked."

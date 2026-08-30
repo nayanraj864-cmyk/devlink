@@ -119,6 +119,8 @@ class ProjectDashboardService:
                         profile_image=m.user.profile_image,
                         role=m.role,
                         invited_at=m.created_at,
+                        expires_at=m.expires_at,
+                        status=m.invitation_status(),
                     )
                 )
 

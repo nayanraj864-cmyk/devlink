@@ -10,7 +10,6 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-
 # ---------------------------------------------------------------------------
 # Backup metadata
 # ---------------------------------------------------------------------------
@@ -33,10 +32,19 @@ class BackupMetadata(BaseModel):
 
 
 class BackupPayload(BaseModel):
-    """Full serialisable backup payload written to disk / returned to client."""
+    """
+    Full serialisable backup payload written to disk / returned to client.
+
+    ``checksum`` and ``signature`` cover the same bytes and answer different
+    questions. The checksum is unkeyed, so it detects corruption but not
+    tampering -- anyone editing the file can recompute it. The signature is an
+    HMAC keyed with a server-side secret, which is what makes "this file came
+    from us" checkable. Restore requires the signature; see #1400.
+    """
 
     metadata: BackupMetadata
     checksum: str  # SHA-256 hex digest of the *data* section JSON string
+    signature: str | None = None  # HMAC-SHA256 over the same string
     data: dict[str, Any]  # serialised UserExportData
 
 

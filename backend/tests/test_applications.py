@@ -1,5 +1,6 @@
 import uuid
 import pytest
+import threading
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from app.models.project import ProjectStage, ProjectVisibility
@@ -289,6 +290,62 @@ def test_withdraw_application_unauthorized(
     assert res.status_code == 403
 
 
+def test_owner_cannot_withdraw_application(
+    client: TestClient, register_and_login, test_project
+):
+    pid = test_project["id"]
+    owner_token = test_project["token"]
+    _, applicant_token = register_and_login(
+        "owner_withdraw@example.com", "ownerwithdraw"
+    )
+
+    created = client.post(
+        "/api/applications/",
+        json={"project_id": str(pid), "flare_id": str(test_project["flare_id"])},
+        headers={"Authorization": f"Bearer {applicant_token}"},
+    )
+    assert created.status_code == 201
+    app_id = created.json()["id"]
+
+    res = client.patch(
+        f"/api/applications/{app_id}/withdraw",
+        headers={"Authorization": f"Bearer {owner_token}"},
+    )
+    assert res.status_code == 403
+    assert res.json()["detail"] == "Only the applicant can withdraw this application"
+
+
+def test_cannot_withdraw_non_pending_application(
+    client: TestClient, register_and_login, test_project
+):
+    pid = test_project["id"]
+    owner_token = test_project["token"]
+    _, applicant_token = register_and_login(
+        "nonpending_withdraw@example.com", "npwithdraw"
+    )
+
+    created = client.post(
+        "/api/applications/",
+        json={"project_id": str(pid), "flare_id": str(test_project["flare_id"])},
+        headers={"Authorization": f"Bearer {applicant_token}"},
+    )
+    assert created.status_code == 201
+    app_id = created.json()["id"]
+
+    accepted = client.patch(
+        f"/api/applications/{app_id}/accept",
+        headers={"Authorization": f"Bearer {owner_token}"},
+    )
+    assert accepted.status_code == 200
+
+    res = client.patch(
+        f"/api/applications/{app_id}/withdraw",
+        headers={"Authorization": f"Bearer {applicant_token}"},
+    )
+    assert res.status_code == 400
+    assert res.json()["detail"] == "Only pending applications can be withdrawn"
+
+
 def test_create_application_unauthenticated(client: TestClient, test_project):
     pid = test_project["id"]
     res = client.post(
@@ -307,3 +364,132 @@ def test_accept_application_not_found(
         headers={"Authorization": f"Bearer {owner_token}"},
     )
     assert res.status_code == 404
+
+
+def test_concurrent_application_race_condition(
+    client: TestClient, register_and_login, test_project
+):
+    """
+    Test that concurrent application submissions for the same project
+    by the same user result in only one application being created.
+    This tests the fix for the race condition where rapid submissions
+    could create duplicate pending applications.
+    """
+    pid = test_project["id"]
+    applicant_id, token = register_and_login(
+        "race_applicant@example.com", "raceapplicant"
+    )
+
+    results = []
+    errors = []
+
+    def make_application_request():
+        try:
+            response = client.post(
+                "/api/applications/",
+                json={
+                    "project_id": str(pid),
+                    "flare_id": str(test_project["flare_id"]),
+                    "message": "Concurrent application",
+                },
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            results.append(response)
+        except Exception as e:
+            errors.append(e)
+
+    # Create multiple threads to simulate concurrent requests
+    threads = [threading.Thread(target=make_application_request) for _ in range(5)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    # Check that no unexpected errors occurred
+    assert len(errors) == 0
+
+    # Count successful (201) and conflict (409) responses
+    success_count = sum(1 for r in results if r.status_code == 201)
+    conflict_count = sum(1 for r in results if r.status_code == 409)
+
+    # Exactly one should succeed, rest should get 409 Conflict
+    assert success_count == 1, f"Expected 1 success, got {success_count}"
+    assert conflict_count == 4, f"Expected 4 conflicts, got {conflict_count}"
+
+    # Verify only one application exists in the database
+    from app.models.application import Application
+    from app.database.session import SessionLocal
+
+    db = SessionLocal()
+    try:
+        apps = db.query(Application).filter(
+            Application.applicant_id == uuid.UUID(applicant_id),
+            Application.project_id == pid,
+        ).all()
+        assert len(apps) == 1, f"Expected 1 application in DB, got {len(apps)}"
+    finally:
+        db.close()
+
+
+def test_reapply_after_rejection_allowed(
+    client: TestClient, register_and_login, test_project
+):
+    """
+    Test that a user can re-apply to a project after their previous
+    application was rejected. The unique constraint on (applicant_id, project_id, status)
+    allows multiple applications with different statuses.
+    """
+    pid = test_project["id"]
+    applicant_id, token = register_and_login(
+        "reapply@example.com", "reapply"
+    )
+
+    # First application
+    response1 = client.post(
+        "/api/applications/",
+        json={
+            "project_id": str(pid),
+            "flare_id": str(test_project["flare_id"]),
+            "message": "First application",
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response1.status_code == 201
+    app_id = response1.json()["id"]
+
+    # Reject the application
+    owner_token = test_project["token"]
+    client.patch(
+        f"/api/applications/{app_id}/reject",
+        headers={"Authorization": f"Bearer {owner_token}"},
+    )
+
+    # Try to apply again - should succeed because status is different
+    response2 = client.post(
+        "/api/applications/",
+        json={
+            "project_id": str(pid),
+            "flare_id": str(test_project["flare_id"]),
+            "message": "Second application after rejection",
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response2.status_code == 201
+    assert response2.json()["message"] == "Second application after rejection"
+
+    # Verify two applications exist with different statuses
+    from app.models.application import Application
+    from app.database.session import SessionLocal
+
+    db = SessionLocal()
+    try:
+        apps = db.query(Application).filter(
+            Application.applicant_id == uuid.UUID(applicant_id),
+            Application.project_id == pid,
+        ).all()
+        assert len(apps) == 2, f"Expected 2 applications in DB, got {len(apps)}"
+        statuses = {app.status.value for app in apps}
+        assert "pending" in statuses
+        assert "rejected" in statuses
+    finally:
+        db.close()

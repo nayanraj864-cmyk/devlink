@@ -39,7 +39,7 @@ Project members can be assigned one of five distinct roles:
 
 | Method | Endpoint | Description | Permission Required |
 |--------|----------|-------------|---------------------|
-| `GET` | `/api/v1/projects/{project_id}/members` | Lists all team members and their roles. | Public / Project Member |
+| `GET` | `/api/v1/projects/{project_id}/members` | Lists all team members and their roles. | Project Member (`project:view`) |
 | `PUT` | `/api/v1/projects/{project_id}/members/{user_id}/role` | Assigns or changes a member's role (`owner`, `maintainer`, `contributor`, `reviewer`, `viewer`). | Owner / Maintainer (`project:manage_roles`) |
 | `POST` | `/api/v1/projects/{project_id}/transfer-ownership` | Transfers project ownership to another team member. | Owner Only (`project:transfer_ownership`) |
 | `DELETE` | `/api/v1/projects/{project_id}/members/{user_id}` | Removes a member from the project. | Owner / Maintainer (`project:remove_members`) or Self-Removal |

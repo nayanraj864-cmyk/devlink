@@ -266,6 +266,8 @@ function BuildersPage() {
   const tab = search.tab;
   const navigate = useNavigate({ from: Route.fullPath });
   const [q, setQ] = useState(search.q || "");
+  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+  const [availabilityOnly, setAvailabilityOnly] = useState<boolean>(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const saveSearch = useSavedSearches((s) => s.saveSearch);
 
@@ -284,9 +286,17 @@ function BuildersPage() {
     }, 300);
     return () => clearTimeout(handler);
   }, [q, navigate]);
+
   const { data = [], isLoading } = useQuery({
-    queryKey: ["builders", tab],
-    queryFn: () => (tab === "matches" ? buildersService.matches() : buildersService.list()),
+    queryKey: ["builders", tab, q, selectedSkills.join(","), availabilityOnly],
+    queryFn: () =>
+      tab === "matches"
+        ? buildersService.matches()
+        : buildersService.list({
+            q: q || undefined,
+            skills: selectedSkills.length > 0 ? selectedSkills.join(",") : undefined,
+            availability: availabilityOnly ? true : undefined,
+          }),
   });
 
   const [connections, setConnections] = useState<string[]>(() => {
@@ -307,20 +317,37 @@ function BuildersPage() {
     });
   };
 
+  const toggleSkill = (skill: string) => {
+    setSelectedSkills((prev) =>
+      prev.includes(skill) ? prev.filter((s) => s !== skill) : [...prev, skill],
+    );
+  };
+
   const baseData = useMemo(
     () => (tab === "connections" ? data.filter((b) => connections.includes(b.id)) : data),
     [data, tab, connections],
   );
 
-  const filtered = useMemo(
-    () =>
-      baseData.filter(
-        (b) =>
-          b.name.toLowerCase().includes(q.toLowerCase()) ||
-          b.skills.some((s) => s.toLowerCase().includes(q.toLowerCase())),
-      ),
-    [baseData, q],
-  );
+  const filtered = useMemo(() => {
+    return baseData.filter((b) => {
+      const matchesQuery =
+        !q ||
+        b.name.toLowerCase().includes(q.toLowerCase()) ||
+        b.skills.some((s) => s.toLowerCase().includes(q.toLowerCase())) ||
+        (b.role && b.role.toLowerCase().includes(q.toLowerCase())) ||
+        (b.bio && b.bio.toLowerCase().includes(q.toLowerCase()));
+
+      const matchesSkills =
+        selectedSkills.length === 0 ||
+        selectedSkills.some((skill) =>
+          b.skills.some((s) => s.toLowerCase() === skill.toLowerCase()),
+        );
+
+      const matchesAvailability = !availabilityOnly || b.online === true;
+
+      return matchesQuery && matchesSkills && matchesAvailability;
+    });
+  }, [baseData, q, selectedSkills, availabilityOnly]);
 
   if (childMatches.length > 0) {
     return <Outlet />;
@@ -365,10 +392,28 @@ function BuildersPage() {
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search by builder name or skill..."
+            placeholder="Search by builder name, skills, role or keywords..."
             className="w-full rounded-md border border-border bg-surface py-[7px] pl-9 pr-3 text-[13px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
           />
         </div>
+        <button
+          type="button"
+          onClick={() => setAvailabilityOnly((prev) => !prev)}
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-[7px] text-[12px] font-medium transition-colors",
+            availabilityOnly
+              ? "border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+              : "border-border bg-surface text-muted-foreground hover:text-foreground",
+          )}
+        >
+          <span
+            className={cn(
+              "h-2 w-2 rounded-full",
+              availabilityOnly ? "bg-emerald-500" : "bg-muted-foreground/50",
+            )}
+          />
+          Open to Work
+        </button>
         <button
           onClick={() => setSaveDialogOpen(true)}
           className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 py-[7px] text-[12px] font-medium text-muted-foreground transition-colors hover:text-foreground"
@@ -376,6 +421,38 @@ function BuildersPage() {
           <Bookmark size={13} />
           Save Search
         </button>
+      </div>
+
+      {/* Target Skills Filter Pills */}
+      <div className="flex flex-wrap items-center gap-1.5 pt-1">
+        <span className="text-[12px] font-medium text-muted-foreground mr-1">Skills:</span>
+        {TARGET_SKILLS.map((skill) => {
+          const isSelected = selectedSkills.includes(skill);
+          return (
+            <button
+              key={skill}
+              type="button"
+              onClick={() => toggleSkill(skill)}
+              className={cn(
+                "rounded-full px-2.5 py-0.5 text-[11px] font-medium border transition-all cursor-pointer",
+                isSelected
+                  ? "bg-primary text-primary-foreground border-primary shadow-xs"
+                  : "bg-surface text-muted-foreground border-border hover:border-primary/50 hover:text-foreground",
+              )}
+            >
+              {skill}
+            </button>
+          );
+        })}
+        {selectedSkills.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setSelectedSkills([])}
+            className="text-[11px] font-medium text-destructive hover:underline ml-1"
+          >
+            Clear
+          </button>
+        )}
       </div>
 
       <SaveSearchDialog
