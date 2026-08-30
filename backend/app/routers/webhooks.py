@@ -15,6 +15,7 @@ from app.schemas.webhook import (
     WebhookMetricsResponse,
 )
 from app.services.webhook_service import WebhookService
+from app.utils.url_safety import UnsafeURL
 
 router = APIRouter(
     prefix="/webhooks",
@@ -34,14 +35,23 @@ def dispatch_webhook(
     db: Session = Depends(get_database),
 ):
     """Dispatch a webhook to a target URL with automatic retries and dead letter queue fallback."""
-    return WebhookService.dispatch_webhook(
-        db=db,
-        event_type=params.event_type,
-        target_url=params.target_url,
-        payload=params.payload,
-        headers=params.headers,
-        max_retries=params.max_retries,
-    )
+    try:
+        return WebhookService.dispatch_webhook(
+            db=db,
+            event_type=params.event_type,
+            target_url=params.target_url,
+            payload=params.payload,
+            headers=params.headers,
+            max_retries=params.max_retries,
+        )
+    except UnsafeURL as exc:
+        # 400, not 500: the caller sent a destination we will not connect to,
+        # and the message from `url_safety` says which rule it broke without
+        # echoing back what the host resolved to.
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
 
 
 @router.post(
