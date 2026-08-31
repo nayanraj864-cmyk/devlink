@@ -80,6 +80,7 @@ jobs:
         run: |
           mkdir -p ../public
           npx @cyclonedx/cyclonedx-npm \
+            --ignore-npm-errors \
             --output-file ../public/sbom.json \
             --output-format JSON
 
