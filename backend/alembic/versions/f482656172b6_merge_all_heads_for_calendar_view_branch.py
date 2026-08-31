@@ -1,7 +1,7 @@
 """Merge all heads for calendar view branch
 
 Revision ID: f482656172b6
-Revises: 1a2b3c4d5ea1, voice_intro_url_001, ffff00000004
+Revises: 1a2b3c4d5ea1, voice_intro_url_001
 Create Date: 2026-08-15 18:48:50.384511
 
 """
@@ -16,7 +16,6 @@ revision: str = "f482656172b6"
 down_revision: Union[str, Sequence[str], None] = (
     "1a2b3c4d5ea1",
     "voice_intro_url_001",
-    "ffff00000004",
 )
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
