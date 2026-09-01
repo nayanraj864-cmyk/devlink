@@ -54,7 +54,4 @@ def upgrade():
 def downgrade():
     bind = op.get_bind()
     if _table_exists(bind, 'user_reports'):
-        if _column_exists(bind, 'user_reports', 'post_id'):
-            op.drop_index(op.f('ix_user_reports_post_id'), table_name='user_reports')
-            op.drop_constraint('fk_user_reports_post_id', 'user_reports', type_='foreignkey')
-            op.drop_column('user_reports', 'post_id')
+        op.drop_table('user_reports')
